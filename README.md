@@ -2,7 +2,7 @@
 
 ## 📝 Deskripsi
 
-Project ini merupakan tugas akhir dari mata kuliah Praktikum Algoritma dan Struktur Data. Tujuannya adalah untuk mengimplementasikan konsep-konsep yang telah diajarkan pada mata kuliah dalam sebuah aplikasi sederhana berbasis bahasa pemrograman C++. Dimana pada project akhir kami, kami membuat aplikasi yang berperilaku
+Project ini merupakan tugas akhir dari mata kuliah Praktikum Algoritma dan Struktur Data. Tujuannya adalah untuk mengimplementasikan konsep-konsep yang telah diajarkan pada mata kuliah dalam sebuah aplikasi sederhana berbasis bahasa pemrograman C++.
 
 ## 👨‍💻 Kontributor
 
