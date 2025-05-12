@@ -1,7 +1,9 @@
+#include <functional>
 #include <iostream>
+#include <vector>
 
 // Data User
-enum UserType { ADMIN, LISTENER };
+enum UserType { LISTENER, ADMIN };
 struct User {
   size_t id;
   std::string username, password;
@@ -10,18 +12,15 @@ struct User {
 
 // Data Lagu
 struct Song {
+  static size_t id_counter;
   size_t id;
   std::string title, artist, genre;
   size_t duration, playCount;
-  float rating;
 
   Song() = default;
   Song(const std::string& title, const std::string& artist,
        const std::string& genre, int duration)
       : title(title), artist(artist), genre(genre), duration(duration) {}
-
-  // Operator overloading => biar bisa bandingin Object Song secara langsung
-  // TODO: == sama < atau >
 
   bool operator==(const Song& rhs) const {
     return title == rhs.title && artist == rhs.artist;
@@ -30,7 +29,6 @@ struct Song {
   bool operator!=(const Song& rhs) const { return !(*this == rhs); }
 };
 
-// Implementasi Double Linked List
 template <typename T>
 struct Node {
   T data;
@@ -44,156 +42,313 @@ struct Node {
 template <typename T>
 class LinkedList {
  public:
-  LinkedList() : head(nullptr), tail(nullptr), node_counter(0) {}
+  LinkedList() : head_(nullptr), tail_(nullptr), node_counter_(0) {}
 
-  int count() { return node_counter; }
+  int count() { return node_counter_; }
 
-  // Sisip Belakang
   void push(const T& data) {
     Node<T>* new_node = new Node<T>(data);
     if (isEmpty()) {
-      node_counter++;
-      head = tail = new_node;
+      node_counter_++;
+      head_ = tail_ = new_node;
       return;
     }
 
-    // Constructor Node : previous and next default is nullptr
-    tail->next = new_node;
-    new_node->previous = tail;
-    tail = new_node;
+    tail_->next = new_node;
+    new_node->previous = tail_;
+    tail_ = new_node;
 
-    node_counter++;
+    node_counter_++;
   }
 
   void insert(const T& data, int position = 0) {
-    node_counter++;
+    Node<T>* new_node = new Node<T>(data);
+    node_counter_++;
+
     if (isEmpty()) {
-      Node<T>* new_node = new Node<T>(data);
-      head = tail = new_node;
+      head_ = tail_ = new_node;
       return;
     }
-    // Error Handling position < 0 => bakal nambahin di depan
+
     if (position <= 0) {
-      Node<T>* new_node = new Node<T>(data);
-      new_node->next = head;
-      head->previous = new_node;
-      head = new_node;
+      new_node->next = head_;
+      head_->previous = new_node;
+      head_ = new_node;
       return;
     }
 
-    Node<T>* iterator = head;
+    Node<T>* iterator = head_;
 
-    for (size_t i = 0; i < position - 1 && iterator; i++) {
+    for (size_t i = 0; i < position - 1 && isNotNull(iterator); i++) {
       iterator = iterator->next;
     }
 
-    // jika posisi yang diberikan lebih dari data yang ada, maka node ditambah
-    // di belakang
-    if (!iterator) {
+    if (isNull(iterator)) {
       push(data);
+      delete new_node;
       return;
     }
 
-    Node<T>* new_node = new Node<T>(data);
     new_node->next = iterator->next;
     new_node->previous = iterator;
-    if (new_node->next) new_node->next->previous = new_node;
+
+    if (isNotNull(new_node->next)) {
+      new_node->next->previous = new_node;
+    } else {
+      tail_ = new_node;
+    }
+
     iterator->next = new_node;
-    if (!new_node->next) tail = new_node;
   }
 
   void deleteNode(const T& data) {
-    if (isEmpty()) return;  // data kosong
-    Node<T>* delete_node = head;
+    if (isEmpty()) return;
 
-    while (delete_node && delete_node->data != data) {
-      delete_node = delete_node->next;
+    Node<T>* targe_node = head_;
+    while (isNotNull(target_node) && targe_node->data != data) {
+      targe_node = targe_node->next;
     }
 
-    if (!delete_node) return;  // data tidak ditemukan
+    if (isNull(targe_node)) return;
 
-    if (delete_node->previous)
-      delete_node->previous->next = delete_node->next;
-    else
-      head = delete_node->next;
+    if (isNotNull(targe_node->previous)) {
+      targe_node->previous->next = targe_node->next;
+    } else {
+      head_ = targe_node->next;
+    }
 
-    if (delete_node->next)
-      delete_node->next->previous = delete_node->previous;
-    else
-      tail = delete_node->previous;
+    if (targe_node->next) {
+      targe_node->next->previous = targe_node->previous;
+    } else {
+      tail_ = targe_node->previous;
+    }
 
-    delete delete_node;
+    delete targe_node;
 
-    node_counter--;
+    node_counter_--;
   }
 
-  // TODO: Reverse the linked list (make sure the program isn't crash)
-  void reverse() {}
+  void reverse() {
+    if (isEmpty()) return;
+
+    Node<T>* previous_node = nullptr;
+    Node<T>* current_node = head_;
+    Node<T>* next_node = nullptr;
+
+    tail_ = head_;
+
+    while (isNotNull(current)) {
+      next_node = current->next;
+      current_node->next = previous_node;
+      current_node->previous = next_node;
+
+      previous_node = current_node;
+      current_node = next_node;
+    }
+
+    head_ = previous_node;
+  }
+
+  void clear() {
+    Node<T>* current{head_};
+
+    while (isNotNull(current)) {
+      Node<T>* next_node = current->next;
+      delete current;
+      current = next_node;
+    }
+
+    head_ = tail_ = nullptr;
+    node_counter_ = 0;
+  }
 
  private:
-  Node<T>* head;
-  Node<T>* tail;
-  size_t node_counter;
+  Node<T>* head_;
+  Node<T>* tail_;
+  size_t node_counter_;
 
-  bool isEmpty() { return !head; }
+  bool isNull(Node<T>* node) { return !node; }
+  bool isNotNull(Node<T>* node) { return node; }
+  bool isEmpty() { return !head_; }
 };
 
-// TODO: make the file name dynamic based on user input or playlist name
-class File {
+class SongLibrary {
  public:
-  const char* kFileName = "songs.txt";  //
-  File() : file_ptr(nullptr) {};
+  const std::vector<Song>& library() { return library_; }
 
-  void save(Song* data, size_t& data_size) {
-    file_ptr = fopen(kFileName, "w");
-
-    if (file_ptr == NULL) {
-      std::cerr << "Can't find file!\n";
-      exit(-1);
-    }
-
-    fwrite(data, sizeof(Song), data_size, file_ptr);
-    fclose(file_ptr);
+  void addToLibrary(const Song& song) {
+    library_.push_back(song);
+    SongSorter::ensureSortedByID(library_);
   }
 
-  void load(Song* data, size_t* data_size) {
-    file_ptr = fopen(kFileName, "r");
-
-    if (file_ptr == NULL) {
-      file_ptr = fopen(kFileName, "w");
-      fclose(file_ptr);
-      file_ptr = fopen(kFileName, "r");
+  void removeSongById(int target_id) {
+    int target_index{-1};
+    if (SongSearcher::binarySearch(target_id, library_, &target_index)) {
+      library_.erase(std::remove_if(library_.begin(), library_.end(),
+                                    [target_id](const Song& song) {
+                                      return song.id == target_id;
+                                    }),
+                     library_.end());
     }
-
-    fseek(file_ptr, 0, SEEK_END);
-    size_t file_size = ftell(file_ptr);
-    rewind(file_ptr);
-
-    *data_size = file_size / sizeof(Song);
-
-    fread(data, sizeof(Song), *data_size, file_ptr);
-    fclose(file_ptr);
   }
 
-  void delete_file() {
+ private:
+  std::vector<Song> library_;
+};
+
+class SongSearcher {
+ public:
+  static std::vector<Song> linearSearch(
+      std::vector<Song>& data, std::function<bool(const Song&)> condition) {}
+
+  static bool binarySearch(size_t target_id, std::vector<Song>& data,
+                           int* result_index) {
+    SongSorter::ensureSortedByID(data);
+
+    size_t start{0}, mid{0}, end{data.size() - 1};
+    bool found = false;
+
+    while (!found && start <= end) {
+      mid = (start + end) / 2;
+
+      if (target_id = data[mid].id) {
+        *result_index = mid;
+        found = true;
+        break;
+      }
+    }
+  }
+};
+
+class SongSorter {
+ public:
+  static inline auto by_title = [](const Song& a, const Song& b) {
+    return a.title < b.title;
+  };
+
+  static inline auto by_id = [](const Song& a, const Song& b) {
+    return a.id < b.id;
+  };
+
+  static inline auto by_play_count = [](const Song& a, const Song& b) {
+    return a.playCount < b.playCount;
+  };
+
+  static void ensureSortedByID(std::vector<Song>& data) {
+    if (data.size() > 30) {
+      quickSort(data, 0, data.size() - 1, by_id);
+    } else {
+      bubbleSort(data, by_id);
+    }
+  }
+
+  static void bubbleSort(
+      std::vector<Song>& data,
+      std::function<bool(const Song&, const Song&)> comparator) {
+    if (data.empty()) return;
+
+    for (size_t i = 0; i < data.size(); ++i) {
+      for (size_t j = 0; j < data.size() - i - 1; ++j) {
+        if (comparator(data[j + 1], data[j])) {
+          swap(&data[j], &data[j + 1]);
+        }
+      }
+    }
+  }
+
+  static void quickSort(
+      std::vector<Song>& data, size_t awal, size_t akhir,
+      std::function<bool(const Song&, const Song&)> comparator) {
+    if (awal < akhir) {
+      int pivot = partition(data, awal, akhir, comparator);
+      if (pivot > awal) quickSort(data, awal, pivot - 1, comparator);
+      if (pivot < akhir) quickSort(data, pivot + 1, akhir, comparator);
+    }
+  }
+
+ private:
+  static size_t partition(
+      std::vector<Song>& data, size_t index_awal, size_t index_akhir,
+      std::function<bool(const Song&, const Song&)> comparator) {
+    Song pivot = data[index_akhir];
+    size_t i = index_awal - 1;
+
+    for (size_t j = index_awal; j < index_akhir; j++) {
+      if (comparator(data[j], pivot)) {
+        i++;
+        swap(&data[j], &data[i]);
+      }
+    }
+
+    swap(&data[i + 1], &data[index_akhir]);
+
+    return (i + 1);
+  }
+
+  static void swap(Song* data1, Song* data2) {
+    Song temporary = *data1;
+    *data1 = *data2;
+    *data2 = temporary;
+  }
+};
+
+class Playlist {};
+
+// bool binarySearch(size_t id_dicari, std::vector<Song>& data,
+//   size_t* result_index) {
+// if (!is_sorted) {
+// if (data.size() > 30) {
+// quickSort(data, 0, data.size() - 1);
+// } else {
+// insertionSort(data);
+// }
+// is_sorted = !is_sorted;
+// }
+
+// size_t start{0}, mid{0}, end{data.size() - 1};
+// bool found = false;
+// while (!found && start <= end) {
+// mid = (start + end) / 2;
+
+// if (id_dicari == data[mid].id) {
+// *result_index = mid;
+// found = true;
+// break;
+// }
+
+// if (id_dicari > data[mid].id) {
+// start = mid + 1;
+// } else if (id_dicari < data[mid].id) {
+// end = mid - 1;
+// }
+// }
+
+// return found;
+// }
+
+// void insertionSort(std::vector<Song>& data) {
+// for (int i = 1; i < data.size(); i++) {
+// int j{i};
+// while (j > 0 && data[j].id < data[j - 1].id) {
+// swap(&data[j], &data[j - 1]);
+// j--;
+// }
+// }
+// }
+
+class ConsoleUI {
+ public:
+  static void clearScreen() {
 #ifdef __WIN32__
-    system("del database-SI.txt");
+    system("cls");
 #else
-    system("rm -f database-SI.txt");
+    system("clear");
 #endif
   }
-
- private:
-  FILE* file_ptr;
 };
 
+size_t Song::id_counter = 1;
 int main() {
-  Song s1 = Song("judul", "pengarang", "pop", 180);
-  Song s2 = Song("judul", "pengarang", "pop", 180);
-
-  if (s1 != s2)
-    std::cout << "Beda lagu";
-  else
-    std::cout << "Sama bro";
+  ConsoleUI::clearScreen();
   return 0;
 }
