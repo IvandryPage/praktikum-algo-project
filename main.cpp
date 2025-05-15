@@ -17,11 +17,16 @@ struct Song {
   size_t id;
   std::string title, artist, genre;
   size_t duration, playCount;
+  int release_year;
 
   Song() = default;
   Song(const std::string& title, const std::string& artist,
-       const std::string& genre, int duration)
-      : title(title), artist(artist), genre(genre), duration(duration) {
+       const std::string& genre, int release_year, int duration)
+      : title(title),
+        artist(artist),
+        genre(genre),
+        release_year(release_year),
+        duration(duration) {
     id = Song::id_counter;
     Song::id_counter++;
   }
@@ -50,6 +55,7 @@ class LinkedList {
 
   const int count() const { return node_counter_; }
   Node<T>* head() const { return head_; }
+  Node<T>* tail() const { return tail_; }
 
   void push(const T& data) {
     Node<T>* new_node = new Node<T>(data);
@@ -193,6 +199,10 @@ class SongSorter {
     return a.playCount < b.playCount;
   };
 
+  static inline auto by_release_year = [](const Song& a, const Song& b) {
+    return a.release_year < b.release_year;
+  };
+
   static void ensureSortedByID(std::vector<Song>& data) {
     if (data.size() > 30) {
       quickSort(data, 0, data.size() - 1, by_id);
@@ -223,6 +233,12 @@ class SongSorter {
       if (pivot > awal) quickSort(data, awal, pivot - 1, comparator);
       if (pivot < akhir) quickSort(data, pivot + 1, akhir, comparator);
     }
+  }
+
+  template <typename T>
+  static std::function<bool(const T&, const T&)> reverseOrder(
+      std::function<bool(const T&, const T&)> comparator) {
+    return [comparator](const T& a, const T& b) { return comparator(b, a); };
   }
 
  private:
@@ -337,7 +353,7 @@ class SongSearcher {
 
 class SongLibrary {
  public:
-  const std::vector<Song>& database() { return database_; }
+  std::vector<Song>& database() { return database_; }
 
   void addToLibrary(const Song& song) {
     if (!SongSearcher::binarySearch(song.id, database_)) {
@@ -439,15 +455,25 @@ int main() {
   SongLibrary library;
   std::vector<Playlist> playlist_user;
 
-  library.addToLibrary(Song("All Too Well", "Taylor Swift", "Pop", 240));
-  library.addToLibrary(Song("You Belong with Me", "Taylor Swift", "Pop", 240));
-  library.addToLibrary(Song("Sparks", "Taylor Swift", "Pop", 240));
-  library.addToLibrary(Song("Love Story", "Taylor Swift", "Pop", 240));
-  library.addToLibrary(Song("Sexy", "Taylor Scott", "Rap", 240));
-  library.addToLibrary(Song("So, Hot in here", "Taylor Scott", "Rap", 240));
-  library.addToLibrary(Song("L Loser", "Taylor Scott", "Rap", 240));
-  library.addToLibrary(Song("W Wiener", "Taylor Scott", "Rap", 240));
-  library.addToLibrary(Song("You Can Be King Again", "Lauren", "Pop", 240));
+  library.addToLibrary(Song("All Too Well", "Taylor Swift", "Pop", 2018, 240));
+  library.addToLibrary(
+      Song("You Belong with Me", "Taylor Swift", "Pop", 2016, 240));
+  library.addToLibrary(Song("Sparks", "Taylor Swift", "Pop", 2015, 240));
+  library.addToLibrary(Song("Love Story", "Taylor Swift", "Pop", 2012, 240));
+  library.addToLibrary(Song("Sexy", "Taylor Scott", "Rap", 2005, 240));
+  library.addToLibrary(
+      Song("So, Hot in here", "Taylor Scott", "Rap", 2009, 240));
+  library.addToLibrary(Song("L Loser", "Taylor Scott", "Rap", 2019, 240));
+  library.addToLibrary(Song("W Wiener", "Taylor Scott", "Rap", 1989, 240));
+  library.addToLibrary(
+      Song("You Can Be King Again", "Lauren", "Pop", 2000, 240));
+
+  SongSorter::bubbleSort(library.database(), SongSorter::reverseOrder<Song>(
+                                                 SongSorter::by_release_year));
+
+  for (auto& song : library.database()) {
+    std::cout << song.release_year << " => ";
+  }
 
   return 0;
 }
