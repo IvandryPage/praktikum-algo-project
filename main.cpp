@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <functional>
 #include <iostream>
 #include <vector>
@@ -20,7 +21,10 @@ struct Song {
   Song() = default;
   Song(const std::string& title, const std::string& artist,
        const std::string& genre, int duration)
-      : title(title), artist(artist), genre(genre), duration(duration) {}
+      : title(title), artist(artist), genre(genre), duration(duration) {
+    id = Song::id_counter;
+    Song::id_counter++;
+  }
 
   bool operator==(const Song& rhs) const {
     return title == rhs.title && artist == rhs.artist;
@@ -44,7 +48,8 @@ class LinkedList {
  public:
   LinkedList() : head_(nullptr), tail_(nullptr), node_counter_(0) {}
 
-  int count() { return node_counter_; }
+  const int count() const { return node_counter_; }
+  Node<T>* head() const { return head_; }
 
   void push(const T& data) {
     Node<T>* new_node = new Node<T>(data);
@@ -73,6 +78,7 @@ class LinkedList {
     if (position <= 0) {
       new_node->next = head_;
       head_->previous = new_node;
+
       head_ = new_node;
       return;
     }
@@ -104,26 +110,26 @@ class LinkedList {
   void deleteNode(const T& data) {
     if (isEmpty()) return;
 
-    Node<T>* targe_node = head_;
-    while (isNotNull(target_node) && targe_node->data != data) {
-      targe_node = targe_node->next;
+    Node<T>* target_node = head_;
+    while (isNotNull(target_node) && target_node->data != data) {
+      target_node = target_node->next;
     }
 
-    if (isNull(targe_node)) return;
+    if (isNull(target_node)) return;
 
-    if (isNotNull(targe_node->previous)) {
-      targe_node->previous->next = targe_node->next;
+    if (isNotNull(target_node->previous)) {
+      target_node->previous->next = target_node->next;
     } else {
-      head_ = targe_node->next;
+      head_ = target_node->next;
     }
 
-    if (targe_node->next) {
-      targe_node->next->previous = targe_node->previous;
+    if (target_node->next) {
+      target_node->next->previous = target_node->previous;
     } else {
-      tail_ = targe_node->previous;
+      tail_ = target_node->previous;
     }
 
-    delete targe_node;
+    delete target_node;
 
     node_counter_--;
   }
@@ -137,8 +143,8 @@ class LinkedList {
 
     tail_ = head_;
 
-    while (isNotNull(current)) {
-      next_node = current->next;
+    while (isNotNull(current_node)) {
+      next_node = current_node->next;
       current_node->next = previous_node;
       current_node->previous = next_node;
 
@@ -162,62 +168,15 @@ class LinkedList {
     node_counter_ = 0;
   }
 
- private:
   Node<T>* head_;
+
+ private:
   Node<T>* tail_;
   size_t node_counter_;
 
   bool isNull(Node<T>* node) { return !node; }
   bool isNotNull(Node<T>* node) { return node; }
   bool isEmpty() { return !head_; }
-};
-
-class SongLibrary {
- public:
-  const std::vector<Song>& library() { return library_; }
-
-  void addToLibrary(const Song& song) {
-    library_.push_back(song);
-    SongSorter::ensureSortedByID(library_);
-  }
-
-  void removeSongById(int target_id) {
-    int target_index{-1};
-    if (SongSearcher::binarySearch(target_id, library_, &target_index)) {
-      library_.erase(std::remove_if(library_.begin(), library_.end(),
-                                    [target_id](const Song& song) {
-                                      return song.id == target_id;
-                                    }),
-                     library_.end());
-    }
-  }
-
- private:
-  std::vector<Song> library_;
-};
-
-class SongSearcher {
- public:
-  static std::vector<Song> linearSearch(
-      std::vector<Song>& data, std::function<bool(const Song&)> condition) {}
-
-  static bool binarySearch(size_t target_id, std::vector<Song>& data,
-                           int* result_index) {
-    SongSorter::ensureSortedByID(data);
-
-    size_t start{0}, mid{0}, end{data.size() - 1};
-    bool found = false;
-
-    while (!found && start <= end) {
-      mid = (start + end) / 2;
-
-      if (target_id = data[mid].id) {
-        *result_index = mid;
-        found = true;
-        break;
-      }
-    }
-  }
 };
 
 class SongSorter {
@@ -292,49 +251,174 @@ class SongSorter {
   }
 };
 
-class Playlist {};
+class SongSearcher {
+ public:
+  static int result_index;
+  static bool binarySearch(size_t target_id, std::vector<Song>& data) {
+    if (data.empty()) return false;
 
-// bool binarySearch(size_t id_dicari, std::vector<Song>& data,
-//   size_t* result_index) {
-// if (!is_sorted) {
-// if (data.size() > 30) {
-// quickSort(data, 0, data.size() - 1);
-// } else {
-// insertionSort(data);
-// }
-// is_sorted = !is_sorted;
-// }
+    SongSorter::ensureSortedByID(data);
 
-// size_t start{0}, mid{0}, end{data.size() - 1};
-// bool found = false;
-// while (!found && start <= end) {
-// mid = (start + end) / 2;
+    size_t start{0}, mid{0}, end{data.size() - 1};
+    while (start <= end) {
+      mid = (start + end) / 2;
 
-// if (id_dicari == data[mid].id) {
-// *result_index = mid;
-// found = true;
-// break;
-// }
+      if (target_id == data[mid].id) {
+        result_index = mid;
+        return true;
+      }
 
-// if (id_dicari > data[mid].id) {
-// start = mid + 1;
-// } else if (id_dicari < data[mid].id) {
-// end = mid - 1;
-// }
-// }
+      if (target_id > data[mid].id) {
+        start = mid + 1;
+      } else if (target_id < data[mid].id) {
+        end = mid - 1;
+      }
+    }
 
-// return found;
-// }
+    result_index = -1;
+    return false;
+  }
 
-// void insertionSort(std::vector<Song>& data) {
-// for (int i = 1; i < data.size(); i++) {
-// int j{i};
-// while (j > 0 && data[j].id < data[j - 1].id) {
-// swap(&data[j], &data[j - 1]);
-// j--;
-// }
-// }
-// }
+  static std::vector<Song> searchById(int target_id,
+                                      const std::vector<Song>& data) {
+    return linearSearch(
+        data, [target_id](const Song& song) { return song.id == target_id; });
+  }
+
+  static std::vector<Song> searchByGenre(const std::string& genre,
+                                         const std::vector<Song>& data) {
+    std::string normalized_genre = normalizeString(genre);
+    return linearSearch(data, [normalized_genre](const Song& song) {
+      std::string song_genre = normalizeString(song.genre);
+      return song_genre.find(normalized_genre) != std::string::npos;
+    });
+  }
+
+  static std::vector<Song> searchByArtist(const std::string& artist,
+                                          const std::vector<Song>& data) {
+    std::string normalized_artist = normalizeString(artist);
+    return linearSearch(data, [normalized_artist](const Song& song) {
+      std::string song_artist = normalizeString(song.artist);
+      return song_artist.find(normalized_artist) != std::string::npos;
+    });
+  }
+
+  static std::vector<Song> searchByTitle(const std::string& title,
+                                         const std::vector<Song>& data) {
+    std::string normalized_title = normalizeString(title);
+    return linearSearch(data, [normalized_title](const Song& song) {
+      std::string song_title = normalizeString(song.title);
+      return song_title.find(normalized_title) != std::string::npos;
+    });
+  }
+
+ private:
+  static std::vector<Song> linearSearch(
+      const std::vector<Song>& data,
+      std::function<bool(const Song&)> comparator) {
+    size_t index{0};
+    std::vector<Song> filtered_library;
+    while (index < data.size()) {
+      if (comparator(data[index])) {
+        filtered_library.push_back(data[index]);
+      }
+      index++;
+    }
+    return filtered_library;
+  }
+
+  static std::string normalizeString(const std::string& string) {
+    std::string normalized = string;
+    std::transform(normalized.begin(), normalized.end(), normalized.begin(),
+                   [](unsigned char c) { return std::tolower(c); });
+    return normalized;
+  }
+};
+
+class SongLibrary {
+ public:
+  const std::vector<Song>& database() { return database_; }
+
+  void addToLibrary(const Song& song) {
+    if (!SongSearcher::binarySearch(song.id, database_)) {
+      database_.push_back(song);
+    }
+
+    SongSorter::ensureSortedByID(database_);
+  }
+
+  void removeSongById(int target_id) {
+    if (SongSearcher::binarySearch(target_id, database_)) {
+      database_.erase(std::remove_if(database_.begin(), database_.end(),
+                                     [target_id](const Song& song) {
+                                       return song.id == target_id;
+                                     }),
+                      database_.end());
+    }
+  }
+
+  Song& getSongById(int target_id) {
+    if (SongSearcher::binarySearch(target_id, database_)) {
+      int result = SongSearcher::result_index;
+      SongSearcher::result_index = -1;
+      return database_[result];
+    }
+  }
+
+ private:
+  std::vector<Song> database_;
+};
+
+class Playlist {
+ public:
+  Playlist(std::string name) : name_(name) { play = false; }
+
+  const std::string& name() { return name_; }
+  const std::string& description() { return description_; }
+  const LinkedList<Song> list() { return list_; }
+
+  void changeName(const std::string& name) {
+    if (name != name_) {
+      name_ = name;
+    }
+  }
+
+  void changeDescription(const std::string& description) {
+    if (description != description_) {
+      description_ = description;
+    }
+  }
+
+  void addSong(const Song& song) {
+    list_.push(song);
+    if (current_song_ == nullptr) {
+      current_song_ = list_.head();
+    }
+  }
+
+  void nextSong() {
+    if (current_song_ && current_song_->next) {
+      current_song_ = current_song_->next;
+    }
+  }
+
+  void previousSong() {
+    if (current_song_ && current_song_->previous) {
+      current_song_ = current_song_->previous;
+    }
+  }
+
+  void removeSong(const Song& song) { list_.deleteNode(song); }
+
+  bool pausePlay() { return !play; }
+
+ private:
+  LinkedList<Song> list_;
+  Node<Song>* current_song_;
+  bool play;
+  std::string name_;
+  std::string description_;
+};
 
 class ConsoleUI {
  public:
@@ -348,7 +432,22 @@ class ConsoleUI {
 };
 
 size_t Song::id_counter = 1;
+int SongSearcher::result_index = 0;
+
 int main() {
   ConsoleUI::clearScreen();
+  SongLibrary library;
+  std::vector<Playlist> playlist_user;
+
+  library.addToLibrary(Song("All Too Well", "Taylor Swift", "Pop", 240));
+  library.addToLibrary(Song("You Belong with Me", "Taylor Swift", "Pop", 240));
+  library.addToLibrary(Song("Sparks", "Taylor Swift", "Pop", 240));
+  library.addToLibrary(Song("Love Story", "Taylor Swift", "Pop", 240));
+  library.addToLibrary(Song("Sexy", "Taylor Scott", "Rap", 240));
+  library.addToLibrary(Song("So, Hot in here", "Taylor Scott", "Rap", 240));
+  library.addToLibrary(Song("L Loser", "Taylor Scott", "Rap", 240));
+  library.addToLibrary(Song("W Wiener", "Taylor Scott", "Rap", 240));
+  library.addToLibrary(Song("You Can Be King Again", "Lauren", "Pop", 240));
+
   return 0;
 }
