@@ -1,42 +1,8 @@
 #include <algorithm>
+#include <fstream>
 #include <functional>
 #include <iostream>
 #include <vector>
-
-// Data User
-enum UserType { LISTENER, ADMIN };
-struct User {
-  size_t id;
-  std::string username, password;
-  UserType type;
-};
-
-// Data Lagu
-struct Song {
-  static size_t id_counter;
-  size_t id;
-  std::string title, artist, genre;
-  size_t duration, playCount;
-  int release_year;
-
-  Song() = default;
-  Song(const std::string& title, const std::string& artist,
-       const std::string& genre, int release_year, int duration)
-      : title(title),
-        artist(artist),
-        genre(genre),
-        release_year(release_year),
-        duration(duration) {
-    id = Song::id_counter;
-    Song::id_counter++;
-  }
-
-  bool operator==(const Song& rhs) const {
-    return title == rhs.title && artist == rhs.artist;
-  }
-
-  bool operator!=(const Song& rhs) const { return !(*this == rhs); }
-};
 
 template <typename T>
 struct Node {
@@ -183,6 +149,183 @@ class LinkedList {
   bool isNull(Node<T>* node) { return !node; }
   bool isNotNull(Node<T>* node) { return node; }
   bool isEmpty() { return !head_; }
+};
+
+class FileManager {
+ public:
+  template <typename T>
+  static bool save(const std::string& filename, const std::vector<T>& data) {
+    file_ptr = fopen(filename.c_str(), "wb");
+    if (!file_ptr) return false;
+
+    for (T x : data) {
+      if (!x.serialize(file_ptr)) {
+        fclose(file_ptr);
+        return false;
+      }
+    }
+
+    fclose(file_ptr);
+    return true;
+  }
+
+  template <typename T>
+  static bool load(const std::string& filename, std::vector<T>& data) {
+    file_ptr = fopen(filename.c_str(), "rb");
+    data.clear();
+    if (!file_ptr) return false;
+
+    T x;
+    while (true) {
+      if (!x.deserialize(file_ptr)) {
+        break;
+      }
+      data.push_back(x);
+    }
+
+    fclose(file_ptr);
+    return true;
+  }
+
+  template <typename T>
+  static bool save(const std::string& filename, const LinkedList<T>& data) {
+    file_ptr = fopen(filename.c_str(), "wb");
+    if (!file_ptr) return false;
+
+    Node<T>* node = data.head();
+    while (node) {
+      if (!node->data.serialize(file_ptr)) {
+        fclose(file_ptr);
+        return false;
+      }
+
+      node = node->next;
+    }
+
+    fclose(file_ptr);
+    return true;
+  }
+
+  template <typename T>
+  static bool load(const std::string& filename, LinkedList<T>& data) {
+    file_ptr = fopen(filename.c_str(), "rb");
+    if (!file_ptr) return false;
+
+    T x;
+    while (!feof(file_ptr)) {
+      if (!x.deserialize(file_ptr)) {
+        break;
+      }
+      data.push(x);
+    }
+
+    fclose(file_ptr);
+    return true;
+  }
+
+  template <typename T>
+  static bool read(T& data, size_t length = 1) {
+    return fread(&data, sizeof(T), length, file_ptr) == length;
+  }
+
+  static bool read(char* str, size_t length) {
+    return fread(str, sizeof(char), length, file_ptr) == length;
+  }
+
+  template <typename T>
+  static bool write(const T& data) {
+    return fwrite(&data, sizeof(T), 1, file_ptr) == 1;
+  }
+
+  static bool write(const char* str, size_t length) {
+    return fwrite(str, sizeof(char), length, file_ptr) == length;
+  }
+
+ private:
+  static inline FILE* file_ptr{nullptr};
+};
+
+// Data Lagu
+struct Song {
+  static size_t id_counter;
+  size_t id;
+  std::string title, artist, genre;
+  size_t duration, playCount;
+  int release_year;
+
+  Song() = default;
+  Song(const std::string& title, const std::string& artist,
+       const std::string& genre, int release_year, size_t duration,
+       size_t playCount = 0)
+      : title(title),
+        artist(artist),
+        genre(genre),
+        release_year(release_year),
+        duration(duration) {
+    id = Song::id_counter;
+    Song::id_counter++;
+  }
+
+  bool operator==(const Song& rhs) const {
+    return title == rhs.title && artist == rhs.artist;
+  }
+
+  bool operator!=(const Song& rhs) const { return !(*this == rhs); }
+
+  bool serialize(FILE* file_ptr) const {
+    size_t title_length = title.size();
+    size_t genre_length = genre.size();
+    size_t artist_length = artist.size();
+
+    FileManager::write<size_t>(id);
+    FileManager::write<size_t>(title_length);
+    FileManager::write(title.c_str(), title_length);
+    FileManager::write<size_t>(genre_length);
+    FileManager::write(genre.c_str(), genre_length);
+    FileManager::write<size_t>(artist_length);
+    FileManager::write(artist.c_str(), artist_length);
+    FileManager::write<int>(release_year);
+    FileManager::write<size_t>(duration);
+    FileManager::write<size_t>(playCount);
+
+    return true;
+  }
+
+  bool deserialize(FILE* file_ptr) {
+    size_t title_length{0}, genre_length{0}, artist_length{0};
+
+    if (!FileManager::read(id)) return false;
+
+    if (!FileManager::read(title_length)) return false;
+    title.resize(title_length);
+    if (title_length > 0 && !FileManager::read(&title[0], title_length))
+      return false;
+
+    if (!FileManager::read(genre_length)) return false;
+    genre.resize(genre_length);
+    if (genre_length > 0 && !FileManager::read(&genre[0], genre_length))
+      return false;
+
+    if (!FileManager::read(artist_length)) return false;
+    artist.resize(artist_length);
+    if (artist_length > 0 && !FileManager::read(&artist[0], artist_length))
+      return false;
+
+    if (!FileManager::read(release_year)) return false;
+    if (!FileManager::read(duration)) return false;
+    if (!FileManager::read(playCount)) return false;
+
+    Song::id_counter++;
+    return true;
+  }
+};
+
+// Data User
+enum UserType { LISTENER, ADMIN };
+struct User {
+  size_t id;
+  std::string username, password;
+  UserType type;
 };
 
 class SongSorter {
@@ -391,7 +534,7 @@ class Playlist {
 
   const std::string& name() { return name_; }
   const std::string& description() { return description_; }
-  const LinkedList<Song> list() { return list_; }
+  LinkedList<Song>& list() { return list_; }
 
   void changeName(const std::string& name) {
     if (name != name_) {
@@ -454,26 +597,6 @@ int main() {
   ConsoleUI::clearScreen();
   SongLibrary library;
   std::vector<Playlist> playlist_user;
-
-  library.addToLibrary(Song("All Too Well", "Taylor Swift", "Pop", 2018, 240));
-  library.addToLibrary(
-      Song("You Belong with Me", "Taylor Swift", "Pop", 2016, 240));
-  library.addToLibrary(Song("Sparks", "Taylor Swift", "Pop", 2015, 240));
-  library.addToLibrary(Song("Love Story", "Taylor Swift", "Pop", 2012, 240));
-  library.addToLibrary(Song("Sexy", "Taylor Scott", "Rap", 2005, 240));
-  library.addToLibrary(
-      Song("So, Hot in here", "Taylor Scott", "Rap", 2009, 240));
-  library.addToLibrary(Song("L Loser", "Taylor Scott", "Rap", 2019, 240));
-  library.addToLibrary(Song("W Wiener", "Taylor Scott", "Rap", 1989, 240));
-  library.addToLibrary(
-      Song("You Can Be King Again", "Lauren", "Pop", 2000, 240));
-
-  SongSorter::bubbleSort(library.database(), SongSorter::reverseOrder<Song>(
-                                                 SongSorter::by_release_year));
-
-  for (auto& song : library.database()) {
-    std::cout << song.release_year << " => ";
-  }
 
   return 0;
 }
