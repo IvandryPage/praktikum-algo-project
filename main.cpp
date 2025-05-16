@@ -4,6 +4,11 @@
 #include <iostream>
 #include <vector>
 
+/**
+ * @brief Penerapan Linked List menggunakan struct / class
+ *
+ * @tparam T = tipe data yang akan disimpan dalam linkedlist
+ */
 template <typename T>
 struct Node {
   T data;
@@ -23,6 +28,11 @@ class LinkedList {
   Node<T>* head() const { return head_; }
   Node<T>* tail() const { return tail_; }
 
+  /**
+   * @brief Push digunakan untuk menyisipkan data di belakang (sisip belakang)
+   *
+   * @param data merupakan tipe data yang akan disimpan
+   */
   void push(const T& data) {
     Node<T>* new_node = new Node<T>(data);
     if (isEmpty()) {
@@ -38,6 +48,13 @@ class LinkedList {
     node_counter_++;
   }
 
+  /**
+   * @brief Insert digunakan untuk sisip depan (default bila tidak memberikan
+   * position) dan sisip tengah jika mengisi parameter position.
+   *
+   * @param data
+   * @param position
+   */
   void insert(const T& data, int position = 0) {
     Node<T>* new_node = new Node<T>(data);
     node_counter_++;
@@ -79,6 +96,12 @@ class LinkedList {
     iterator->next = new_node;
   }
 
+  /**
+   * @brief deleteNode -- fungsi yang digunakan untuk menghapus node berdasarkan
+   * data yang sama
+   *
+   * @param data
+   */
   void deleteNode(const T& data) {
     if (isEmpty()) return;
 
@@ -106,6 +129,11 @@ class LinkedList {
     node_counter_--;
   }
 
+  /**
+   * @brief reverse digunakan untuk memutarbalikkan linked list atau mengubah
+   * urutan linkedlist dari belakang ke depan
+   *
+   */
   void reverse() {
     if (isEmpty()) return;
 
@@ -127,6 +155,11 @@ class LinkedList {
     head_ = previous_node;
   }
 
+  /**
+   * @brief clear digunakan untuk menghapus seluruh isi linked list tanpa
+   * menyebabkan memory leak
+   *
+   */
   void clear() {
     Node<T>* current{head_};
 
@@ -151,8 +184,14 @@ class LinkedList {
   bool isEmpty() { return !head_; }
 };
 
+/**
+ * @brief Implementasi FILE* menggunakan FileManager digunakan untuk menyimpan
+ * data playlist yang ingin dibuat dan juga daftar lagu yang tersedia
+ *
+ */
 class FileManager {
  public:
+  // implementasi save and load untuk vector atau array
   template <typename T>
   static bool save(const std::string& filename, const std::vector<T>& data) {
     file_ptr = fopen(filename.c_str(), "wb");
@@ -187,6 +226,7 @@ class FileManager {
     return true;
   }
 
+  // implementasi save and load untuk LinkedList
   template <typename T>
   static bool save(const std::string& filename, const LinkedList<T>& data) {
     file_ptr = fopen(filename.c_str(), "wb");
@@ -223,6 +263,8 @@ class FileManager {
     return true;
   }
 
+  // Implementasi fungsi bantuan untuk mencegah kesalahan saat menulis dan
+  // membaca data serta digunakan untuk meningkatkan readabilitas
   template <typename T>
   static bool read(T& data, size_t length = 1) {
     return fread(&data, sizeof(T), length, file_ptr) == length;
@@ -245,7 +287,10 @@ class FileManager {
   static inline FILE* file_ptr{nullptr};
 };
 
-// Data Lagu
+/**
+ * @brief Song adalah data yang digunakan pada project RAiVFY
+ *
+ */
 struct Song {
   static size_t id_counter;
   size_t id;
@@ -253,6 +298,7 @@ struct Song {
   size_t duration, playCount;
   int release_year;
 
+  // Constructor
   Song() = default;
   Song(const std::string& title, const std::string& artist,
        const std::string& genre, int release_year, size_t duration,
@@ -266,12 +312,16 @@ struct Song {
     Song::id_counter++;
   }
 
+  // Operator Overloading digunakan untuk membantu membandingkan apakah dua lagi
+  // sama atau tidak
   bool operator==(const Song& rhs) const {
     return title == rhs.title && artist == rhs.artist;
   }
 
   bool operator!=(const Song& rhs) const { return !(*this == rhs); }
 
+  // serialize dan deserialize digunakan agar FileManager dapat digunakan untuk
+  // lebih dari satu type data
   bool serialize(FILE* file_ptr) const {
     size_t title_length = title.size();
     size_t genre_length = genre.size();
@@ -320,7 +370,10 @@ struct Song {
   }
 };
 
-// Data User
+/**
+ * @brief User dan UserType merupakan data user yang digunakan untuk fitur login
+ *
+ */
 enum UserType { LISTENER, ADMIN };
 struct User {
   size_t id;
@@ -328,8 +381,14 @@ struct User {
   UserType type;
 };
 
+/**
+ * @brief Implementasi Algoritma Sorting Bubble Sort dan Quick Sort
+ *
+ */
 class SongSorter {
  public:
+  // Lambda function untuk membuat bubbleSort dan quickSort dapat digunakan
+  // secara flexible untuk mengurutkan data berdasarkan field tertentu
   static inline auto by_title = [](const Song& a, const Song& b) {
     return a.title < b.title;
   };
@@ -378,6 +437,7 @@ class SongSorter {
     }
   }
 
+  // reverseOrder digunakan untuk melakukan pengurutan secara descending
   template <typename T>
   static std::function<bool(const T&, const T&)> reverseOrder(
       std::function<bool(const T&, const T&)> comparator) {
@@ -410,8 +470,13 @@ class SongSorter {
   }
 };
 
+/**
+ * @brief Implementasi Algoritma Searching Binary Search dan Linear Search
+ *
+ */
 class SongSearcher {
  public:
+  // Algortima binarySearch digunakan untuk menemukan lagu dengan id tertentu
   static int result_index;
   static bool binarySearch(size_t target_id, std::vector<Song>& data) {
     if (data.empty()) return false;
@@ -438,6 +503,7 @@ class SongSearcher {
     return false;
   }
 
+  // Fungsi untuk mencari lagu berdasarkan field tertentu
   static std::vector<Song> searchById(int target_id,
                                       const std::vector<Song>& data) {
     return linearSearch(
@@ -472,6 +538,8 @@ class SongSearcher {
   }
 
  private:
+  // linearSearch digunakan untuk proses filtering lagu berdasarkan field
+  // tertentu
   static std::vector<Song> linearSearch(
       const std::vector<Song>& data,
       std::function<bool(const Song&)> comparator) {
