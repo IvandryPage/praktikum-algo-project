@@ -3,6 +3,7 @@
 #include <functional>
 #include <iomanip>
 #include <iostream>
+#include <string>
 #include <vector>
 
 /**
@@ -192,6 +193,9 @@ class LinkedList {
  */
 class FileManager {
  public:
+  static std::string kDatabase;
+  static std::string kPlaylist;
+
   // implementasi save and load untuk vector atau array
   template <typename T>
   static bool save(const std::string& filename, const std::vector<T>& data) {
@@ -199,7 +203,7 @@ class FileManager {
     if (!file_ptr) return false;
 
     for (T x : data) {
-      if (!x.serialize(file_ptr)) {
+      if (!x.serialize()) {
         fclose(file_ptr);
         return false;
       }
@@ -215,9 +219,9 @@ class FileManager {
     data.clear();
     if (!file_ptr) return false;
 
-    T x;
     while (true) {
-      if (!x.deserialize(file_ptr)) {
+      T x;
+      if (!x.deserialize()) {
         break;
       }
       data.push_back(x);
@@ -235,7 +239,7 @@ class FileManager {
 
     Node<T>* node = data.head();
     while (node) {
-      if (!node->data.serialize(file_ptr)) {
+      if (!node->data.serialize()) {
         fclose(file_ptr);
         return false;
       }
@@ -252,9 +256,9 @@ class FileManager {
     file_ptr = fopen(filename.c_str(), "rb");
     if (!file_ptr) return false;
 
-    T x;
     while (!feof(file_ptr)) {
-      if (!x.deserialize(file_ptr)) {
+      T x;
+      if (!x.deserialize()) {
         break;
       }
       data.push(x);
@@ -263,19 +267,6 @@ class FileManager {
     fclose(file_ptr);
     return true;
   }
-
-  // static bool savePlaylist(const std::string& filename,
-  //                          const std::vector<Playlist>& data) {
-  //   file_ptr = fopen(filename.c_str(), "w");
-  //   if (!file_ptr) return false;
-
-  //   fprintf(file_ptr, "%s %s\n", data);
-  //   fclose(file_ptr);
-  //   return true;
-  // }
-
-  // static bool loadPlayliist(const std::string& filename,
-  //                           std::vector<Playlist>& playlists) {}
 
   // Implementasi fungsi bantuan untuk mencegah kesalahan saat menulis dan
   // membaca data serta digunakan untuk meningkatkan readabilitas
@@ -299,10 +290,10 @@ class FileManager {
 
  private:
   static inline FILE* file_ptr{nullptr};
-
-  static const std::string kDatabase;
-  static const std::string kPlaylist;
 };
+
+std::string FileManager::kDatabase = "DatabaseLagu.dat";
+std::string FileManager::kPlaylist = "DatabasePlaylist.dat";
 
 /**
  * @brief Song adalah data yang digunakan pada project RAiVFY
@@ -312,22 +303,20 @@ struct Song {
   static size_t id_counter;
   size_t id;
   std::string title, artist, genre;
-  size_t duration, playCount;
+  size_t duration, playCount{0};
   int release_year;
 
   // Constructor
-  Song() = default;
+  Song() : id(id_counter++) {}
   Song(const std::string& title, const std::string& artist,
        const std::string& genre, int release_year, size_t duration,
        size_t playCount = 0)
-      : title(title),
+      : id(id_counter++),
+        title(title),
         artist(artist),
         genre(genre),
         release_year(release_year),
-        duration(duration) {
-    id = Song::id_counter;
-    Song::id_counter++;
-  }
+        duration(duration) {}
 
   // Operator Overloading digunakan untuk membantu membandingkan apakah dua lagi
   // sama atau tidak
@@ -339,7 +328,7 @@ struct Song {
 
   // serialize dan deserialize digunakan agar FileManager dapat digunakan untuk
   // lebih dari satu type data
-  bool serialize(FILE* file_ptr) const {
+  bool serialize() const {
     size_t title_length = title.size();
     size_t genre_length = genre.size();
     size_t artist_length = artist.size();
@@ -358,7 +347,7 @@ struct Song {
     return true;
   }
 
-  bool deserialize(FILE* file_ptr) {
+  bool deserialize() {
     size_t title_length{0}, genre_length{0}, artist_length{0};
 
     if (!FileManager::read(id)) return false;
@@ -382,7 +371,6 @@ struct Song {
     if (!FileManager::read(duration)) return false;
     if (!FileManager::read(playCount)) return false;
 
-    Song::id_counter++;
     return true;
   }
 };
@@ -493,7 +481,7 @@ class SongSorter {
  */
 class SongSearcher {
  public:
-  // Algortima binarySearch digunakan untuk menemukan lagu dengan id tertentu
+  // Algoritma binarySearch digunakan untuk menemukan lagu dengan id tertentu
   static int result_index;
   static bool binarySearch(size_t target_id, std::vector<Song>& data) {
     if (data.empty()) return false;
@@ -615,8 +603,11 @@ class SongLibrary {
 
 class Playlist {
  public:
-  Playlist(std::string name) : name_(name) { play = false; }
+  static size_t id_counter;
+  Playlist() : id_(id_counter++) {}
+  Playlist(std::string name) : name_(name), id_(id_counter++) { play = false; }
 
+  const size_t id() { return id_; }
   const std::string& name() { return name_; }
   const std::string& description() { return description_; }
   LinkedList<Song>& list() { return list_; }
@@ -656,19 +647,38 @@ class Playlist {
 
   bool pausePlay() { return !play; }
 
+  bool serialize() const {
+    size_t name_length = name_.size();
+
+    FileManager::write<size_t>(name_length);
+    FileManager::write(name_.c_str(), name_length);
+
+    return true;
+  }
+
+  bool deserialize() {
+    size_t name_length{0};
+    if (!FileManager::read(name_length)) return false;
+
+    name_.resize(name_length);
+    if (name_length > 0 && !FileManager::read(&name_[0], name_length))
+      return false;
+
+    return true;
+  }
+
+  void displayList() {
+    // TODO: Display;
+  }
+
  private:
   LinkedList<Song> list_;
   Node<Song>* current_song_;
   bool play;
+  size_t id_;
   std::string name_;
   std::string description_;
 };
-
-size_t Song::id_counter = 1;
-int SongSearcher::result_index = 0;
-
-SongLibrary database;
-std::vector<Playlist> playlist_library;
 
 /*
  * @brief Class Text digunakan untuk memodifikasi atau memanipulasi
@@ -697,126 +707,33 @@ class Text {
   }
 };
 
-class ConsoleUI {
+size_t Song::id_counter = 1;
+size_t Playlist::id_counter = 1;
+int SongSearcher::result_index = 0;
+
+class RAiVFY {
  public:
-  static void clearScreen() {
-#ifdef __WIN32__
-    system("cls");
-#else
-    system("clear");
-#endif
-  }
-
-  static void buatPlaylist() {
-    std::string namaPlaylist;
-
-    std::cout << "\n=====================================\n";
-    std::cout << "          BUAT PLAYLIST BARU      \n";
-    std::cout << "=====================================\n";
-    std::cout << "\n Masukkan nama playlist baru mu: ";
-
-    std::getline(std::cin >> std::ws,
-                 namaPlaylist);  // Agar bisa input dengan spasi
-
-    std::cout << "\n Playlist " << namaPlaylist << " berhasil dibuat!\n";
-    std::cout << "Saatnya mengisi playlist ini dengan lagu favoritmu!\n";
-    std::cout << "-------------------------------------\n\n";
-  }
-
-  static void daftarPlaylist() {
-    std::cout << "\n========================================\n";
-    std::cout << "            DAFTAR PLAYLIST           \n";
-    std::cout << "========================================\n";
-    std::cout << "\n" << Text::bold("Playlist yang Kamu Miliki:\n");
-    std::cout << std::setfill('=') << std::setw(40) << "=" << std::setfill(' ')
-              << "\n";
-
-    std::cout << std::left << std::setw(5) << Text::bold("No") << std::setw(25)
-              << Text::bold("Nama Playlist");
-    std::cout << std::setfill('-') << std::setw(40) << "-" << std::setfill(' ')
-              << "\n";
-
-    std::cout << std::left << std::setw(5)  // nomor
-              << std::setw(22)              // nama playlist
-              << "\n";
-    std::cout << "============================================================="
-                 "====\n";
-    std::cout << "\nPilih playlist yang ingin kamu kelola: ";
-    std::cout << "\n\n" << Text::underline("Pilihan Menu:");
-    std::cout << "\n1. Lihat isi playlist";
-    std::cout << "\n2. Tambah lagu ke playlist";
-    std::cout << "\n3. Hapus lagu dari playlist";
-    std::cout << "\n4. Hapus playlist";
-    std::cout << "\n5. Kembali ke menu utama\n";
-  }
-
-  static void tabelLagu() {
-    std::cout << std::left << std::setw(5) << Text::bold("No") << std::setw(22)
-              << Text::bold("Judul") << std::setw(22) << Text::bold("Artis")
-              << std::setw(8) << Text::bold("Tahun") << std::setw(12)
-              << Text::bold("Diputar") << "\n";
-    std::cout << std::setfill('-') << std::setw(69) << "-" << std::setfill(' ')
-              << "\n";
-
-    std::cout << std::left << std::setw(5)  // nomor
-              << std::setw(22)              // judul
-              << std::setw(22)              // artis
-              << std::setw(8)               // tahun
-              << std::setw(12)              // diputar
-              << "\n";
-
-    std::cout << "============================================================="
-                 "====\n";
-  }
-  static void menuSorting() {
-    std::cout << "Mau Urutan Berdasarkan :\n";
-    std::cout << "1. Ascending\n";
-    std::cout << "2. Descending\n";
-    std::cout << "Pilihan: ";
-    int pilihan;
-    std::cin >> pilihan;
-  }
-
-  static void daftarLagu() {
-    std::cout << "\n===========================================\n";
-    std::cout << "               DAFTAR LAGU               \n";
-    std::cout << "===========================================\n";
-    std::cout << "\n Daftar Semua Lagu:\n";
-    tabelLagu();
-    std::cout << "\nIngin mengurutkan berdasarkan:\n";
-    std::cout << "1. Tahun\n";
-    std::cout << "2. Most Played\n";
-    std::cout << "3. Judul\n";
-    std::cout << "Pilihan: ";
-    int pilihan;
-    std::cin >> pilihan;
-    switch (pilihan) {
-      case 1:
-        menuSorting();
-        break;
-      case 2:
-        menuSorting();
-        break;
-      case 3:
-        menuSorting();
-        break;
-      default:
-        std::cout << "Pilihan tidak valid!\n";
-        break;
+  void ignite() {
+    while (true) {
+      mainMenu();
     }
   }
 
-  static void searchingLagu() {
-    std::cout << "\n=====================================\n";
-    std::cout << "           CARI LAGU               \n";
-    std::cout << "=====================================\n";
-    std::cout << "Masukkan judul lagu: ";
-    std::string judul;
-    std::cin.ignore();
-    std::getline(std::cin, judul);
+  void load() {
+    FileManager::load<Song>(FileManager::kDatabase, database.database());
+    FileManager::load<Playlist>(FileManager::kPlaylist, playlist_library);
+
+    for (auto& p : playlist_library) {
+      FileManager::load<Song>(p.name() + ".dat", p.list());
+    }
   }
 
-  static void mainMenu() {
+ private:
+  SongLibrary database;
+  std::vector<Playlist> playlist_library;
+
+  void mainMenu() {
+    clearScreen();
     std::cout << "=====================================\n";
     std::cout << "              RAiVFY              \n";
     std::cout << "=====================================\n";
@@ -826,40 +743,279 @@ class ConsoleUI {
     std::cout << " 4.  Cari Lagu\n";
     std::cout << " 0.  Keluar\n";
     std::cout << "-------------------------------------\n";
-    std::cout << " Pilihan Menu : ";
 
-    int pilihan;
-    std::cin >> pilihan;
+    int choice = getNumberInput<int>(" Pilihan Menu : ");
+    enum mainMenu { KELUAR, BUAT, LIHAT, LIST, SEARCH };
+    switch (choice) {
+      case KELUAR:
+        exit(0);
+        break;
+      case BUAT:
+        buatPlaylist();
+        break;
+      case LIHAT:
+        daftarPlaylist();
+        break;
+      case LIST:
+        daftarLagu();
+        break;
+      case SEARCH:
+        searchingLagu();
+        break;
+      default:
+        std::cout << "Menu tidak tersedia!\n";
+    }
+  }
 
+  void clearScreen() {
+#ifdef __WIN32__
+    system("cls");
+#else
+    system("clear");
+#endif
+  }
+
+  void waitForInput() {
+#ifdef __WIN32__
+    system("pause");
+#else
+    std::cin.ignore();
+    std::cout << "Tekan tombol enter untuk melanjutkan...";
+    std::cin.get();
+#endif
+  }
+
+  void buatPlaylist() {
+    clearScreen();
+    std::string namaPlaylist;
+
+    std::cout << "\n=====================================\n";
+    std::cout << "          BUAT PLAYLIST BARU      \n";
+    std::cout << "=====================================\n";
+    std::cout << "\n Masukkan nama playlist baru kamu: ";
+
+    std::getline(std::cin >> std::ws,
+                 namaPlaylist);  // Agar bisa input dengan spasi
+    bool isValid = true;
+    for (auto& p : playlist_library) {
+      if (p.name() == namaPlaylist) {
+        isValid = false;
+      }
+    }
+
+    if (!isValid) {
+      std::cout << "Playlist [" << Text::bold(namaPlaylist) << "] sudah ada!\n";
+    } else {
+      Playlist p(namaPlaylist);
+      playlist_library.emplace_back(p);
+      FileManager::save(FileManager::kPlaylist, playlist_library);
+      FileManager::save(namaPlaylist + ".dat", p.list());
+
+      std::cout << "\n Playlist [" << Text::bold(namaPlaylist)
+                << "] berhasil dibuat!\n";
+      std::cout << "Saatnya mengisi playlist ini dengan lagu favoritmu!\n\n";
+      std::cout << "-------------------------------------\n\n";
+    }
+
+    waitForInput();
+  }
+
+  void daftarPlaylist() {
+    clearScreen();
+    std::cout << "\n========================================\n";
+    std::cout << "            DAFTAR PLAYLIST           \n";
+    std::cout << "========================================\n";
+    std::cout << "\n" << Text::bold("Playlist yang Kamu Miliki:\n");
+
+    for (auto& p : playlist_library) {
+      std::cout << p.id() << ") " << p.name().substr(0, 10) << "\t("
+                << p.list().count() << " songs)"  // nama playlist
+                << "\n";
+    }
+    std::cout << "\n0) Kembali ke Main Menu\n";
+
+    int choice = getNumberInput<int>(" Pilihan Menu: ");
+
+    if (choice <= 0 || choice > playlist_library.size()) {
+      std::cout << "Tidak ada playlist yang sesuai!\n";
+      waitForInput();
+      mainMenu();
+    }
+
+    playlistAction(choice - 1);
+  }
+
+  void playlistAction(int index) {
+    std::cout << "\nPlaylist [" << Text::bold(playlist_library[index].name())
+              << "] ";
+    std::cout << "\n" << Text::underline("Pilihan Menu:");
+    std::cout << "\n1. Lihat isi playlist";
+    std::cout << "\n2. Tambah lagu ke playlist";
+    std::cout << "\n3. Hapus lagu dari playlist";
+    std::cout << "\n4. Hapus playlist";
+    std::cout << "\n0. Kembali ke menu utama\n";
+
+    int choice = getNumberInput<int>(" Pilih menu: ");
+    enum action { KEMBALI, LIHAT, TAMBAH, HAPUS_LAGU, HAPUS_PLAYLIST };
+    switch (choice) {
+      case KEMBALI:
+        mainMenu();
+        break;
+      case LIHAT:
+        FileManager::load(playlist_library[index].name() + ".dat",
+                          playlist_library[index].list());
+        // playlist_library[index].displayList();
+        break;
+      case TAMBAH:
+        playlist_library[index].addSong(database.database().at(0));
+        FileManager::save(playlist_library[index].name() + ".dat",
+                          playlist_library[index].list());
+        break;
+      case HAPUS_LAGU:
+        playlist_library[index].removeSong(database.database().at(0));
+        FileManager::save(playlist_library[index].name() + ".dat",
+                          playlist_library[index].list());
+        break;
+      case HAPUS_PLAYLIST: {
+        std::string command = "rm " + playlist_library[index].name() + ".dat";
+        system(command.data());
+
+        Playlist target = playlist_library[index];
+        playlist_library.erase(
+            std::remove_if(
+                playlist_library.begin(), playlist_library.end(),
+                [&target](Playlist& p) { return p.id() == target.id(); }),
+            playlist_library.end());
+        Playlist::id_counter = 1;
+        FileManager::save(FileManager::kPlaylist, playlist_library);
+        FileManager::load(FileManager::kPlaylist, playlist_library);
+        break;
+      }
+      default:
+        std::cout << "Menu tidak tersedia!\n";
+    }
+  }
+
+  int opsiSorting() {
+    std::cout << "Mau Urutan Berdasarkan :\n";
+    std::cout << "1. Ascending\n";
+    std::cout << "2. Descending\n";
+    std::cout << "Pilihan: ";
+
+    return getNumberInput<int>();
+  }
+
+  void daftarLagu() {
+    clearScreen();
+    std::cout << "\n===========================================\n";
+    std::cout << "               DAFTAR LAGU               \n";
+    std::cout << "===========================================\n";
+    std::cout << "\n Daftar Semua Lagu:\n\n";
+
+    std::cout << std::left << std::setw(5 + Text::kAnsi) << Text::bold("No")
+              << std::setw(22 + Text::kAnsi) << Text::bold("Judul")
+              << std::setw(22 + Text::kAnsi) << Text::bold("Artis")
+              << std::setw(8 + Text::kAnsi) << Text::bold("Tahun")
+              << std::setw(12 + Text::kAnsi) << Text::bold("Diputar") << "\n";
+    std::cout << std::setfill('-') << std::setw(69) << "-" << std::setfill(' ')
+              << "\n";
+
+    for (auto& song : database.database()) {
+      std::cout << std::left << std::setw(5) << song.id        // nomor
+                << std::setw(22) << song.title.substr(0, 22)   // judul
+                << std::setw(22) << song.artist.substr(0, 22)  // artis
+                << std::setw(8) << song.release_year           // tahun
+                << std::setw(12) << song.playCount             // diputar
+                << "\n";
+    }
+
+    std::cout
+        << "\n================================================================"
+           "====\n";
+
+    std::cout << "\nIngin mengurutkan berdasarkan:\n";
+    std::cout << "1. Tahun Rilis\n";
+    std::cout << "2. Most Played\n";
+    std::cout << "3. Judul\n";
+    std::cout << "0. Main Menu\n";
+    std::cout << "Pilihan: ";
+
+    int pilihan = getNumberInput<int>();
+    int isDescending;
     switch (pilihan) {
       case 1:
-        buatPlaylist();
-        // Buat Playlist
+        isDescending = opsiSorting() - 1;
+        SongSorter::quickSort(
+            database.database(), 0, database.database().size() - 1,
+            (isDescending)
+                ? SongSorter::reverseOrder<Song>(SongSorter::by_release_year)
+                : SongSorter::by_release_year);
+        daftarLagu();
         break;
       case 2:
-        daftarPlaylist();
-        // Lihat Playlist
+        isDescending = opsiSorting() - 1;
+        SongSorter::quickSort(
+            database.database(), 0, database.database().size() - 1,
+            (isDescending)
+                ? SongSorter::reverseOrder<Song>(SongSorter::by_play_count)
+                : SongSorter::by_play_count);
+        daftarLagu();
         break;
       case 3:
+        isDescending = opsiSorting() - 1;
+        SongSorter::quickSort(
+            database.database(), 0, database.database().size() - 1,
+            (isDescending)
+                ? SongSorter::reverseOrder<Song>(SongSorter::by_title)
+                : SongSorter::by_title);
         daftarLagu();
-        // Daftar Lagu
-        break;
-      case 4:
-        searchingLagu();
-        // Cari Lagu
         break;
       case 0:
-        exit(0);
-        // Keluar
+        mainMenu();
         break;
       default:
         std::cout << "Pilihan tidak valid!\n";
         break;
     }
   }
+
+  void searchingLagu() {
+    std::cout << "\n=====================================\n";
+    std::cout << "           CARI LAGU               \n";
+    std::cout << "=====================================\n";
+    std::cout << "Masukkan judul lagu: ";
+
+    std::string judul;
+    std::cin.ignore();
+    std::getline(std::cin, judul);
+  }
+
+  // Error Handling untuk memastikan tidak ada infinite loop
+  // ketika user menginputkan huruf pada variable numerik
+  template <typename TypeTemplate>
+  static TypeTemplate getNumberInput(const std::string& prompt = "") {
+    static_assert(std::is_arithmetic<TypeTemplate>::value,
+                  "Hanya tipe data numerik!");
+
+    TypeTemplate value{};
+    do {
+      std::cout << prompt;
+      std::cin >> value;
+
+      if (!std::cin.fail()) {
+        return value;
+      }
+
+      std::cin.clear();
+      std::cin.ignore();
+      std::cout << "Harap hanya input angka!\n";
+    } while (true);
+  }
 };
 
 int main() {
-  ConsoleUI::mainMenu();
+  RAiVFY app;
+  app.load();
+  app.ignite();
   return 0;
 }
