@@ -3,8 +3,36 @@
 #include <functional>
 #include <iomanip>
 #include <iostream>
+#include <optional>
 #include <string>
 #include <vector>
+
+/*
+ * @brief Class Text digunakan untuk memodifikasi atau memanipulasi
+ *        tulisan pada console / terminal
+ * @param string_view digunakan untuk melihat string (mengurangi overhead
+ * program).
+ */
+class Text {
+ public:
+  static constexpr int kAnsi = 8;
+  static std::string bold(std::string text) {
+    return "\033[1m" + std::string(text) + "\033[0m";
+  }
+
+  static std::string faintOff(std::string text) {
+    return "\033[2m" + std::string(text) + "\033[0m";
+    ;
+  }
+
+  static std::string italic(std::string text) {
+    return "\033[2m" + std::string(text) + "\033[0m";
+  }
+
+  static std::string underline(std::string text) {
+    return "\033[4m" + std::string(text) + "\033[0m";
+  }
+};
 
 /**
  * @brief Penerapan Linked List menggunakan struct / class
@@ -189,7 +217,6 @@ class LinkedList {
 /**
  * @brief Implementasi FILE* menggunakan FileManager digunakan untuk menyimpan
  * data playlist yang ingin dibuat dan juga daftar lagu yang tersedia
- *
  */
 class FileManager {
  public:
@@ -224,7 +251,7 @@ class FileManager {
       if (!x.deserialize()) {
         break;
       }
-      data.push_back(x);
+      data.emplace_back(x);
     }
 
     fclose(file_ptr);
@@ -307,7 +334,7 @@ struct Song {
   int release_year;
 
   // Constructor
-  Song() : id(id_counter++) {}
+  Song() : id(id_counter) {}
   Song(const std::string& title, const std::string& artist,
        const std::string& genre, int release_year, size_t duration,
        size_t playCount = 0)
@@ -371,6 +398,7 @@ struct Song {
     if (!FileManager::read(duration)) return false;
     if (!FileManager::read(playCount)) return false;
 
+    Song::id_counter++;
     return true;
   }
 };
@@ -395,19 +423,19 @@ class SongSorter {
   // Lambda function untuk membuat bubbleSort dan quickSort dapat digunakan
   // secara flexible untuk mengurutkan data berdasarkan field tertentu
   static inline auto by_title = [](const Song& a, const Song& b) {
-    return a.title < b.title;
+    return a.title <= b.title;
   };
 
   static inline auto by_id = [](const Song& a, const Song& b) {
-    return a.id < b.id;
+    return a.id <= b.id;
   };
 
   static inline auto by_play_count = [](const Song& a, const Song& b) {
-    return a.playCount < b.playCount;
+    return a.playCount <= b.playCount;
   };
 
   static inline auto by_release_year = [](const Song& a, const Song& b) {
-    return a.release_year < b.release_year;
+    return a.release_year <= b.release_year;
   };
 
   static void ensureSortedByID(std::vector<Song>& data) {
@@ -488,7 +516,7 @@ class SongSearcher {
 
     SongSorter::ensureSortedByID(data);
 
-    size_t start{0}, mid{0}, end{data.size() - 1};
+    int start{0}, mid{0}, end{static_cast<int>(data.size()) - 1};
     while (start <= end) {
       mid = (start + end) / 2;
 
@@ -503,7 +531,6 @@ class SongSearcher {
         end = mid - 1;
       }
     }
-
     result_index = -1;
     return false;
   }
@@ -552,7 +579,7 @@ class SongSearcher {
     std::vector<Song> filtered_library;
     while (index < data.size()) {
       if (comparator(data[index])) {
-        filtered_library.push_back(data[index]);
+        filtered_library.emplace_back(data[index]);
       }
       index++;
     }
@@ -604,8 +631,8 @@ class SongLibrary {
 class Playlist {
  public:
   static size_t id_counter;
-  Playlist() : id_(id_counter++) {}
-  Playlist(std::string name) : name_(name), id_(id_counter++) { play = false; }
+  Playlist() : id_(id_counter) {}
+  Playlist(std::string name) : name_(name), id_(id_counter) { play = false; }
 
   const size_t id() { return id_; }
   const std::string& name() { return name_; }
@@ -664,11 +691,33 @@ class Playlist {
     if (name_length > 0 && !FileManager::read(&name_[0], name_length))
       return false;
 
+    Playlist::id_counter++;
     return true;
   }
 
   void displayList() {
-    // TODO: Display;
+    Node<Song>* x = list_.head();
+
+    std::cout << std::left << std::setw(5 + Text::kAnsi) << Text::bold("No")
+              << std::setw(22 + Text::kAnsi) << Text::bold("Judul")
+              << std::setw(22 + Text::kAnsi) << Text::bold("Artis")
+              << std::setw(8 + Text::kAnsi) << Text::bold("Tahun")
+              << std::setw(12 + Text::kAnsi) << Text::bold("Diputar") << "\n";
+    std::cout << std::setfill('-') << std::setw(69) << "-" << std::setfill(' ')
+              << "\n";
+
+    while (x != nullptr) {
+      std::cout << std::left << std::setw(5) << x->data.id        // nomor
+                << std::setw(22) << x->data.title.substr(0, 22)   // judul
+                << std::setw(22) << x->data.artist.substr(0, 22)  // artis
+                << std::setw(8) << x->data.release_year           // tahun
+                << std::setw(12) << x->data.playCount             // diputar
+                << "\n";
+      x = x->next;
+    }
+    std::cout
+        << "\n================================================================"
+           "====\n";
   }
 
  private:
@@ -678,33 +727,6 @@ class Playlist {
   size_t id_;
   std::string name_;
   std::string description_;
-};
-
-/*
- * @brief Class Text digunakan untuk memodifikasi atau memanipulasi
- *        tulisan pada console / terminal
- * @param string_view digunakan untuk melihat string (mengurangi overhead
- * program).
- */
-class Text {
- public:
-  static constexpr int kAnsi = 8;
-  static std::string bold(std::string text) {
-    return "\033[1m" + std::string(text) + "\033[0m";
-  }
-
-  static std::string faintOff(std::string text) {
-    return "\033[2m" + std::string(text) + "\033[0m";
-    ;
-  }
-
-  static std::string italic(std::string text) {
-    return "\033[2m" + std::string(text) + "\033[0m";
-  }
-
-  static std::string underline(std::string text) {
-    return "\033[4m" + std::string(text) + "\033[0m";
-  }
 };
 
 size_t Song::id_counter = 1;
@@ -757,32 +779,15 @@ class RAiVFY {
         daftarPlaylist();
         break;
       case LIST:
-        daftarLagu();
+        daftarLagu(database.database());
         break;
       case SEARCH:
         searchingLagu();
+        waitForInput();
         break;
       default:
         std::cout << "Menu tidak tersedia!\n";
     }
-  }
-
-  void clearScreen() {
-#ifdef __WIN32__
-    system("cls");
-#else
-    system("clear");
-#endif
-  }
-
-  void waitForInput() {
-#ifdef __WIN32__
-    system("pause");
-#else
-    std::cin.ignore();
-    std::cout << "Tekan tombol enter untuk melanjutkan...";
-    std::cin.get();
-#endif
   }
 
   void buatPlaylist() {
@@ -794,9 +799,9 @@ class RAiVFY {
     std::cout << "=====================================\n";
     std::cout << "\n Masukkan nama playlist baru kamu: ";
 
-    std::getline(std::cin >> std::ws,
-                 namaPlaylist);  // Agar bisa input dengan spasi
+    std::getline(std::cin >> std::ws, namaPlaylist);
     bool isValid = true;
+
     for (auto& p : playlist_library) {
       if (p.name() == namaPlaylist) {
         isValid = false;
@@ -818,6 +823,7 @@ class RAiVFY {
     }
 
     waitForInput();
+    playlistAction(playlist_library.size() - 1);
   }
 
   void daftarPlaylist() {
@@ -828,8 +834,9 @@ class RAiVFY {
     std::cout << "\n" << Text::bold("Playlist yang Kamu Miliki:\n");
 
     for (auto& p : playlist_library) {
-      std::cout << p.id() << ") " << p.name().substr(0, 10) << "\t("
-                << p.list().count() << " songs)"  // nama playlist
+      std::cout << p.id() << ") " << std::left << std::setw(15)
+                << p.name().substr(0, 10) << "(" << p.list().count()
+                << " songs)"  // nama playlist
                 << "\n";
     }
     std::cout << "\n0) Kembali ke Main Menu\n";
@@ -837,7 +844,8 @@ class RAiVFY {
     int choice = getNumberInput<int>(" Pilihan Menu: ");
 
     if (choice <= 0 || choice > playlist_library.size()) {
-      std::cout << "Tidak ada playlist yang sesuai!\n";
+      if (choice != 0) std::cout << "Tidak ada playlist yang sesuai!\n";
+      std::cin >> std::ws;
       waitForInput();
       mainMenu();
     }
@@ -846,6 +854,8 @@ class RAiVFY {
   }
 
   void playlistAction(int index) {
+    if (index < 0) return;
+
     std::cout << "\nPlaylist [" << Text::bold(playlist_library[index].name())
               << "] ";
     std::cout << "\n" << Text::underline("Pilihan Menu:");
@@ -856,28 +866,52 @@ class RAiVFY {
     std::cout << "\n0. Kembali ke menu utama\n";
 
     int choice = getNumberInput<int>(" Pilih menu: ");
+
     enum action { KEMBALI, LIHAT, TAMBAH, HAPUS_LAGU, HAPUS_PLAYLIST };
     switch (choice) {
       case KEMBALI:
         mainMenu();
         break;
       case LIHAT:
+        playlist_library[index].displayList();
+        std::cin.ignore();
+        waitForInput();
+        break;
+      case TAMBAH: {
+        std::vector<Song> filtered = searchingLagu();
+        size_t selected_id = getNumberInput<size_t>("Masukan ID lagu : ");
+        if (SongSearcher::binarySearch(selected_id, filtered)) {
+          playlist_library[index].addSong(
+              filtered.at(SongSearcher::result_index));
+        }
+        FileManager::save(playlist_library[index].name() + ".dat",
+                          playlist_library[index].list());
+        playlist_library[index].list().clear();
         FileManager::load(playlist_library[index].name() + ".dat",
                           playlist_library[index].list());
-        // playlist_library[index].displayList();
         break;
-      case TAMBAH:
-        playlist_library[index].addSong(database.database().at(0));
+      }
+      case HAPUS_LAGU: {
+        playlist_library[index].displayList();
+        size_t selected_id = getNumberInput<size_t>("Masukan ID lagu : ");
+        if (SongSearcher::binarySearch(selected_id, database.database())) {
+          playlist_library[index].removeSong(
+              database.database().at(SongSearcher::result_index));
+        }
         FileManager::save(playlist_library[index].name() + ".dat",
                           playlist_library[index].list());
-        break;
-      case HAPUS_LAGU:
-        playlist_library[index].removeSong(database.database().at(0));
-        FileManager::save(playlist_library[index].name() + ".dat",
+        playlist_library[index].list().clear();
+        FileManager::load(playlist_library[index].name() + ".dat",
                           playlist_library[index].list());
         break;
+      }
       case HAPUS_PLAYLIST: {
-        std::string command = "rm " + playlist_library[index].name() + ".dat";
+        std::string command;
+#ifdef __WIN32__
+        command = "delete '" + playlist_library[index].name() + ".dat'";
+#else
+        command = "rm '" + playlist_library[index].name() + ".dat'";
+#endif
         system(command.data());
 
         Playlist target = playlist_library[index];
@@ -896,42 +930,14 @@ class RAiVFY {
     }
   }
 
-  int opsiSorting() {
-    std::cout << "Mau Urutan Berdasarkan :\n";
-    std::cout << "1. Ascending\n";
-    std::cout << "2. Descending\n";
-    std::cout << "Pilihan: ";
-
-    return getNumberInput<int>();
-  }
-
-  void daftarLagu() {
+  void daftarLagu(std::vector<Song>& data) {
     clearScreen();
     std::cout << "\n===========================================\n";
     std::cout << "               DAFTAR LAGU               \n";
     std::cout << "===========================================\n";
     std::cout << "\n Daftar Semua Lagu:\n\n";
 
-    std::cout << std::left << std::setw(5 + Text::kAnsi) << Text::bold("No")
-              << std::setw(22 + Text::kAnsi) << Text::bold("Judul")
-              << std::setw(22 + Text::kAnsi) << Text::bold("Artis")
-              << std::setw(8 + Text::kAnsi) << Text::bold("Tahun")
-              << std::setw(12 + Text::kAnsi) << Text::bold("Diputar") << "\n";
-    std::cout << std::setfill('-') << std::setw(69) << "-" << std::setfill(' ')
-              << "\n";
-
-    for (auto& song : database.database()) {
-      std::cout << std::left << std::setw(5) << song.id        // nomor
-                << std::setw(22) << song.title.substr(0, 22)   // judul
-                << std::setw(22) << song.artist.substr(0, 22)  // artis
-                << std::setw(8) << song.release_year           // tahun
-                << std::setw(12) << song.playCount             // diputar
-                << "\n";
-    }
-
-    std::cout
-        << "\n================================================================"
-           "====\n";
+    tabelLagu(data);
 
     std::cout << "\nIngin mengurutkan berdasarkan:\n";
     std::cout << "1. Tahun Rilis\n";
@@ -950,7 +956,7 @@ class RAiVFY {
             (isDescending)
                 ? SongSorter::reverseOrder<Song>(SongSorter::by_release_year)
                 : SongSorter::by_release_year);
-        daftarLagu();
+        daftarLagu(data);
         break;
       case 2:
         isDescending = opsiSorting() - 1;
@@ -959,7 +965,7 @@ class RAiVFY {
             (isDescending)
                 ? SongSorter::reverseOrder<Song>(SongSorter::by_play_count)
                 : SongSorter::by_play_count);
-        daftarLagu();
+        daftarLagu(data);
         break;
       case 3:
         isDescending = opsiSorting() - 1;
@@ -968,7 +974,7 @@ class RAiVFY {
             (isDescending)
                 ? SongSorter::reverseOrder<Song>(SongSorter::by_title)
                 : SongSorter::by_title);
-        daftarLagu();
+        daftarLagu(data);
         break;
       case 0:
         mainMenu();
@@ -979,15 +985,111 @@ class RAiVFY {
     }
   }
 
-  void searchingLagu() {
+  void tabelLagu(std::vector<Song>& data) {
+    std::cout << std::left << std::setw(5 + Text::kAnsi) << Text::bold("No")
+              << std::setw(22 + Text::kAnsi) << Text::bold("Judul")
+              << std::setw(22 + Text::kAnsi) << Text::bold("Artis")
+              << std::setw(8 + Text::kAnsi) << Text::bold("Tahun")
+              << std::setw(12 + Text::kAnsi) << Text::bold("Diputar") << "\n";
+    std::cout << std::setfill('-') << std::setw(69) << "-" << std::setfill(' ')
+              << "\n";
+
+    for (auto& song : data) {
+      std::cout << std::left << std::setw(5) << song.id        // nomor
+                << std::setw(22) << song.title.substr(0, 22)   // judul
+                << std::setw(22) << song.artist.substr(0, 22)  // artis
+                << std::setw(8) << song.release_year           // tahun
+                << std::setw(12) << song.playCount             // diputar
+                << "\n";
+    }
+
+    std::cout
+        << "\n================================================================"
+           "====\n";
+  }
+
+  int opsiSorting() {
+    std::cout << "Mau Urutan Berdasarkan :\n";
+    std::cout << "1. Ascending\n";
+    std::cout << "2. Descending\n";
+    std::cout << "Pilihan: ";
+
+    return getNumberInput<int>();
+  }
+
+  std::vector<Song> searchingLagu() {
+    SongSearcher::result_index = -1;
     std::cout << "\n=====================================\n";
     std::cout << "           CARI LAGU               \n";
     std::cout << "=====================================\n";
-    std::cout << "Masukkan judul lagu: ";
+    std::cout << "Opsi Searching: \n";
+    std::cout << "1. Judul\n";
+    std::cout << "2. Artist\n";
+    std::cout << "3. Genre\n";
+    std::cout << "4. Show All\n";
 
-    std::string judul;
-    std::cin.ignore();
-    std::getline(std::cin, judul);
+    int choice = getNumberInput<int>("Pilih opsi : ") - 1;
+    enum search { JUDUL, ARTIST, GENRE, ALL };
+    std::vector<Song> filtered;
+    switch (choice) {
+      case JUDUL: {
+        std::cout << "Masukkan kata kunci: ";
+
+        std::string kata_kunci;
+        std::cin.ignore();
+        std::getline(std::cin, kata_kunci);
+        filtered = SongSearcher::searchByTitle(kata_kunci, database.database());
+        tabelLagu(filtered);
+        break;
+      }
+      case ARTIST: {
+        std::cout << "Masukkan kata kunci: ";
+
+        std::string kata_kunci;
+        std::cin.ignore();
+        std::getline(std::cin, kata_kunci);
+        filtered =
+            SongSearcher::searchByArtist(kata_kunci, database.database());
+        tabelLagu(filtered);
+        break;
+      }
+      case GENRE: {
+        std::cout << "Masukkan kata kunci: ";
+
+        std::string kata_kunci;
+        std::cin.ignore();
+        std::getline(std::cin, kata_kunci);
+        filtered = SongSearcher::searchByGenre(kata_kunci, database.database());
+        tabelLagu(filtered);
+        break;
+      }
+      case ALL:
+        filtered = database.database();
+        tabelLagu(filtered);
+        std::cin.ignore();
+        break;
+      default:
+        std::cout << "Menu tidak tersedia!";
+    }
+
+    return filtered;
+  }
+
+  void clearScreen() {
+#ifdef __WIN32__
+    system("cls");
+#else
+    system("clear");
+#endif
+  }
+
+  void waitForInput() {
+#ifdef __WIN32__
+    system("pause");
+#else
+    std::cout << "Tekan tombol enter untuk melanjutkan...";
+    std::cin.get();
+#endif
   }
 
   // Error Handling untuk memastikan tidak ada infinite loop
@@ -1017,5 +1119,6 @@ int main() {
   RAiVFY app;
   app.load();
   app.ignite();
+
   return 0;
 }

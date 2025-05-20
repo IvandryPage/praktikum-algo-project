@@ -8,8 +8,8 @@
       "args": [],
       "stopAtEntry": false,
       "externalConsole": true,
-      "cwd": "c:/praktikum-algo-project",
-      "program": "c:/praktikum-algo-project/build/Debug/outDebug",
+      "cwd": "${workspaceFolder}",
+      "program": "${workspaceFolder}/build/main",
       "MIMode": "gdb",
       "miDebuggerPath": "gdb",
       "setupCommands": [
