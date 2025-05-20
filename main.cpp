@@ -1,10 +1,14 @@
 #include <algorithm>
+#include <atomic>
+#include <chrono>
 #include <fstream>
 #include <functional>
 #include <iomanip>
 #include <iostream>
+#include <mutex>
 #include <optional>
 #include <string>
+#include <thread>
 #include <vector>
 
 /*
@@ -205,13 +209,14 @@ class LinkedList {
 
   Node<T>* head_;
 
+  bool isEmpty() { return !head_; }
+
  private:
   Node<T>* tail_;
   size_t node_counter_;
 
   bool isNull(Node<T>* node) { return !node; }
   bool isNotNull(Node<T>* node) { return node; }
-  bool isEmpty() { return !head_; }
 };
 
 /**
@@ -655,24 +660,16 @@ class Playlist {
     list_.push(song);
     if (current_song_ == nullptr) {
       current_song_ = list_.head();
-    }
-  }
-
-  void nextSong() {
-    if (current_song_ && current_song_->next) {
-      current_song_ = current_song_->next;
-    }
-  }
-
-  void previousSong() {
-    if (current_song_ && current_song_->previous) {
-      current_song_ = current_song_->previous;
+      play = true;
     }
   }
 
   void removeSong(const Song& song) { list_.deleteNode(song); }
 
-  bool pausePlay() { return !play; }
+  bool pausePlay() {
+    play = !play;
+    return play;
+  }
 
   bool serialize() const {
     size_t name_length = name_.size();
@@ -720,13 +717,66 @@ class Playlist {
            "====\n";
   }
 
+  void playbackLoop() {
+    current_song_ = list_.head();
+    play = true;
+
+    while (current_song_ && play) {
+      int remaining = current_song_->data.duration / 10;
+      std::string title = current_song_->data.title + "         ";
+      size_t move_print = 0;
+
+      int tick;
+      while (remaining > 0 && play) {
+        std::cout << "\033[s";
+        std::cout << "\033[3;35H";
+
+        std::string scrolling_title = title.substr(move_print, 8);
+        if (scrolling_title.length() < 8) {
+          scrolling_title += title.substr(0, 8 - scrolling_title.length());
+        }
+
+        std::cout << "🎵 Now Playing: " << scrolling_title
+                  << " | Remaining: " << std::setw(3) << remaining << "s"
+                  << std::flush;
+
+        std::cout << "\033[u" << std::flush;
+
+        std::this_thread::sleep_for(std::chrono::milliseconds(200));
+
+        if (tick % 5 == 0) {
+          --remaining;
+          tick = 0;
+        }
+
+        tick++;
+        move_print = (move_print + 1) % title.length();  // wrap scroll
+      }
+
+      nextSong();
+    }
+  }
+
  private:
   LinkedList<Song> list_;
   Node<Song>* current_song_;
   bool play;
+
   size_t id_;
   std::string name_;
   std::string description_;
+
+  void nextSong() {
+    if (current_song_ && current_song_->next) {
+      current_song_ = current_song_->next;
+    }
+  }
+
+  void previousSong() {
+    if (current_song_ && current_song_->previous) {
+      current_song_ = current_song_->previous;
+    }
+  }
 };
 
 size_t Song::id_counter = 1;
@@ -736,6 +786,11 @@ int SongSearcher::result_index = 0;
 class RAiVFY {
  public:
   void ignite() {
+    if (!playlist_library.empty()) {
+      std::thread playback(&Playlist::playbackLoop, &playlist_library[0]);
+      playback.detach();
+    }
+
     while (true) {
       mainMenu();
     }
@@ -861,13 +916,14 @@ class RAiVFY {
     std::cout << "\n" << Text::underline("Pilihan Menu:");
     std::cout << "\n1. Lihat isi playlist";
     std::cout << "\n2. Tambah lagu ke playlist";
-    std::cout << "\n3. Hapus lagu dari playlist";
-    std::cout << "\n4. Hapus playlist";
+    std::cout << "\n3. Reverse Playlist";
+    std::cout << "\n4. Hapus lagu dari playlist";
+    std::cout << "\n5. Hapus playlist";
     std::cout << "\n0. Kembali ke menu utama\n";
 
     int choice = getNumberInput<int>(" Pilih menu: ");
 
-    enum action { KEMBALI, LIHAT, TAMBAH, HAPUS_LAGU, HAPUS_PLAYLIST };
+    enum action { KEMBALI, LIHAT, TAMBAH, REVERSE, HAPUS_LAGU, HAPUS_PLAYLIST };
     switch (choice) {
       case KEMBALI:
         mainMenu();
@@ -891,6 +947,9 @@ class RAiVFY {
                           playlist_library[index].list());
         break;
       }
+      case REVERSE:
+        playlist_library[index].list().reverse();
+        break;
       case HAPUS_LAGU: {
         playlist_library[index].displayList();
         size_t selected_id = getNumberInput<size_t>("Masukan ID lagu : ");
@@ -914,11 +973,10 @@ class RAiVFY {
 #endif
         system(command.data());
 
-        Playlist target = playlist_library[index];
+        int target = playlist_library[index].id();
         playlist_library.erase(
-            std::remove_if(
-                playlist_library.begin(), playlist_library.end(),
-                [&target](Playlist& p) { return p.id() == target.id(); }),
+            std::remove_if(playlist_library.begin(), playlist_library.end(),
+                           [&target](Playlist& p) { return p.id() == target; }),
             playlist_library.end());
         Playlist::id_counter = 1;
         FileManager::save(FileManager::kPlaylist, playlist_library);
@@ -1115,6 +1173,8 @@ class RAiVFY {
   }
 };
 
+// TODO: ADD MORE ERROR HANDLING!
+// OPTIONAL TODO: multithread for playing music
 int main() {
   RAiVFY app;
   app.load();
