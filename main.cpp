@@ -669,6 +669,7 @@ class Playlist {
 
   void displayList() {
     // TODO: Display;
+    
   }
 
  private:
@@ -714,10 +715,19 @@ int SongSearcher::result_index = 0;
 class RAiVFY {
  public:
   void ignite() {
+ while (true) {
+    loginAsAdmin = login();
+
     while (true) {
-      mainMenu();
+      if (loginAsAdmin)
+        menuAdmin();
+      else
+        mainMenu();
+
+      break; // keluar dari inner loop, lalu login lagi
     }
   }
+}
 
   void load() {
     FileManager::load<Song>(FileManager::kDatabase, database.database());
@@ -731,6 +741,7 @@ class RAiVFY {
  private:
   SongLibrary database;
   std::vector<Playlist> playlist_library;
+  bool loginAsAdmin;
 
   void mainMenu() {
     clearScreen();
@@ -1011,6 +1022,49 @@ class RAiVFY {
       std::cout << "Harap hanya input angka!\n";
     } while (true);
   }
+  bool login(){
+    std::cout << "\n===================================================\n";
+    std::cout << "            SELAMAT DATANG DI RAiVFY!              \n";
+    std::cout << "===================================================\n";
+    std::string username;
+    std::cout << "\nSilahkan masuk dengan username Anda!\n\n";
+    std::cout << Text::bold("Username: ") ;
+
+    std::getline(std::cin, username);
+    if (username == "admin")
+     return true;
+    return false;
+  }
+
+  void menuAdmin(){
+    std::cout << "=====================================\n";
+    std::cout << "              HI ADMIN!              \n";
+    std::cout << "=====================================\n";
+    std::cout << " 1.  Tambah Lagu\n";
+    std::cout << " 2.  Hapus Lagu\n";
+    std::cout << " 3.  Daftar Lagu\n";
+    std::cout << " 0.  Keluar\n";
+    std::cout << "-------------------------------------\n";
+
+    int choice = getNumberInput<int>(" Pilihan Menu : ");
+    enum mainMenu { KELUAR, TAMBAH, HAPUS, DAFTAR};
+    switch (choice) {
+      case KELUAR:
+        return;
+        break;
+      case TAMBAH:
+      
+        break;
+      case HAPUS:
+
+        break;
+      case DAFTAR:
+        daftarLagu();
+        break;
+      default:
+        std::cout << "Menu tidak tersedia!\n";
+    }
+  } 
 };
 
 int main() {
