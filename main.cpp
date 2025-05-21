@@ -1078,20 +1078,24 @@ class Playlist {
   void displayList() {
     Node<Song>* x = list_.head();
 
-    std::cout << "\n\n";
+    std::cout << "\n\n"
+              << std::setfill('-') << std::setw(61) << "-" << std::setfill(' ')
+              << "\n";
+    ;
     std::cout << std::left << std::setw(5 + Text::kAnsi) << Text::bold("No")
-              << std::setw(22 + Text::kAnsi) << Text::bold("Judul")
-              << std::setw(22 + Text::kAnsi) << Text::bold("Artis")
-              << std::setw(8 + Text::kAnsi) << Text::bold("Tahun")
-              << std::setw(12 + Text::kAnsi) << Text::bold("Diputar") << "\n";
+              << std::setw(18 + Text::kAnsi) << Text::bold("Judul")
+              << std::setw(18 + Text::kAnsi) << Text::bold("Artis")
+              << std::setw(5 + Text::kAnsi) << Text::bold("Tahun")
+              << std::setw(15 + Text::kAnsi) << Text::bold("Diputar") << "\n";
+
     std::cout << std::setfill('-') << std::setw(61) << "-" << std::setfill(' ')
               << "\n";
 
     while (x != nullptr) {
       std::cout << std::left << std::setw(5) << x->data.id << std::setw(18)
                 << x->data.title.substr(0, 18) << std::setw(18)
-                << x->data.artist.substr(0, 18) << std::setw(8)
-                << x->data.release_year << std::setw(12) << x->data.play_count
+                << x->data.artist.substr(0, 18) << std::setw(5)
+                << x->data.release_year << std::setw(15) << x->data.play_count
                 << "\n";
       x = x->next;
     }
@@ -1110,7 +1114,7 @@ class Playlist {
       std::string title = current_song_->data.title + "         ";
       size_t move_print = 0;
 
-      int tick;
+      int tick{0};
       while (remaining > 0) {
         std::cout << "\033[s";
         std::cout << "\033[2;24H";
@@ -1186,11 +1190,10 @@ class RAiVFY {
         playback.detach();
       }
 
-      if (index < playlist_library.size()) {
+      if (index < playlist_library.size() - 1)
         index++;
-      } else {
+      else
         index = 0;
-      }
 
       mainMenu();
     }
@@ -1222,14 +1225,17 @@ class RAiVFY {
   void mainMenu() {
     clearScreen();
     printBorder(Text::bold(" RAiVFY "), 11);
-    std::cout << "\n 1.  Buat Playlist\n";
+    std::cout << "\n";
+    std::cout << " 1.  Buat Playlist\n";
     std::cout << " 2.  Lihat Playlist\n";
     std::cout << " 3.  Daftar Lagu\n";
     std::cout << " 4.  Cari Lagu\n";
-    std::cout << " 0.  Keluar\n";
+    std::cout << " 0.  Keluar\n\n";
 
-    int choice = getNumberInput<int>(Text::bold("\n > Pilih Menu : "));
     enum mainMenu { KELUAR, BUAT, LIHAT, LIST, SEARCH };
+
+    int choice = getNumberInput<int>(Text::bold(" > Pilih Menu : "));
+
     switch (choice) {
       case KELUAR:
         exit(0);
@@ -1260,7 +1266,7 @@ class RAiVFY {
     clearScreen();
     std::string namaPlaylist;
 
-    printBorder(" Buat Playlist ", 10);
+    printBorder(Text::bold(" Buat Playlist "), 10);
     std::cout << "\n Masukkan nama playlist baru kamu: ";
 
     std::getline(std::cin >> std::ws, namaPlaylist);
@@ -1276,10 +1282,10 @@ class RAiVFY {
       std::cout << " Playlist [" << Text::bold(namaPlaylist)
                 << "] sudah ada!\n";
     } else {
-      Playlist p(namaPlaylist);
-      playlist_library.emplace_back(p);
+      Playlist new_playlist(namaPlaylist);
+      playlist_library.emplace_back(new_playlist);
       FileManager::save(FileManager::kPlaylist, playlist_library);
-      FileManager::save(namaPlaylist + ".dat", p.list());
+      FileManager::save(namaPlaylist + ".dat", new_playlist.list());
 
       std::cout << "\n Playlist [" << Text::bold(namaPlaylist)
                 << "] berhasil dibuat!\n";
@@ -1299,10 +1305,10 @@ class RAiVFY {
     printBorder(Text::bold(" Buat Playlist "), playlist_library.size() + 7);
 
     std::cout << "\n";
-    for (auto& p : playlist_library) {
-      std::cout << " " << p.id() << ". " << std::left << std::setw(15)
-                << p.name().substr(0, 14) << "(" << p.list().count()
-                << " songs)"
+    for (auto& playlist : playlist_library) {
+      std::cout << " " << playlist.id() << ". " << std::left << std::setw(15)
+                << playlist.name().substr(0, 14) << "("
+                << playlist.list().count() << " songs)"
                 << "\n";
     }
     std::cout << "\n 0. Kembali ke Main Menu\n";
@@ -1312,7 +1318,7 @@ class RAiVFY {
     if (choice <= 0 || choice > playlist_library.size()) {
       if (choice != 0) std::cout << " Tidak ada playlist yang sesuai!\n";
       waitForInput();
-      mainMenu();
+      return;
     }
 
     playlistAction(choice - 1);
@@ -1325,84 +1331,95 @@ class RAiVFY {
    */
   void playlistAction(int index) {
     clearScreen();
-    if (index < 0) return;
+    if (index < 0) {
+      std::cout << "Input index tidak valid!\n";
+      return;
+    }
 
     printBorder(
         " Playlist [" + Text::bold(playlist_library[index].name()) + "] ", 12);
-    std::cout << Text::underline("\n Pilihan Menu:");
-    std::cout << "\n 1. Lihat isi playlist";
-    std::cout << "\n 2. Tambah lagu ke playlist";
-    std::cout << "\n 3. Reverse playlist";
-    std::cout << "\n 4. Hapus lagu dari playlist";
-    std::cout << "\n 5. Hapus playlist";
-    std::cout << "\n 0. Kembali ke menu utama\n\n";
-
-    int choice = getNumberInput<int>(" > Pilih menu: ");
+    std::cout << "\n" << Text::underline(" Pilihan Menu:\n");
+    std::cout << " 1. Lihat isi playlist\n";
+    std::cout << " 2. Tambah lagu ke playlist\n";
+    std::cout << " 3. Reverse playlist\n";
+    std::cout << " 4. Hapus lagu dari playlist\n";
+    std::cout << " 5. Hapus playlist\n";
+    std::cout << " 0. Kembali ke menu utama\n\n";
 
     enum action { KEMBALI, LIHAT, TAMBAH, REVERSE, HAPUS_LAGU, HAPUS_PLAYLIST };
+
+    int choice = getNumberInput<int>(" > Pilih menu: ");
     switch (choice) {
-      case KEMBALI:
-        mainMenu();
-        break;
-      case LIHAT:
+      case KEMBALI: {
+        return;
+      }
+      case LIHAT: {
         clearScreen();
+
         printBorder(
             " Playlist [" + Text::bold(playlist_library[index].name()) + "] ",
             playlist_library[index].list().count() + 3);
+
         playlist_library[index].displayList();
+
         std::cin.ignore();
         waitForInput();
         break;
+      }
       case TAMBAH: {
         std::vector<Song> filtered = searchingLagu();
+
         size_t selected_id = getNumberInput<size_t>(" Masukan ID lagu : ");
         if (SongSearcher::binarySearch(selected_id, filtered)) {
           playlist_library[index].addSong(
               filtered.at(SongSearcher::result_index));
         }
+
         FileManager::save(playlist_library[index].name() + ".dat",
                           playlist_library[index].list());
+
         playlist_library[index].list().clear();
         FileManager::load(playlist_library[index].name() + ".dat",
                           playlist_library[index].list());
         break;
       }
-      case REVERSE:
+      case REVERSE: {
         playlist_library[index].list().reverse();
         playlist_library[index].displayList();
+
         std::cin.ignore();
         waitForInput();
         break;
+      }
       case HAPUS_LAGU: {
         playlist_library[index].displayList();
+
         size_t selected_id = getNumberInput<size_t>(" Masukan ID lagu : ");
         if (SongSearcher::binarySearch(selected_id, library.database())) {
           playlist_library[index].removeSong(
               library.database().at(SongSearcher::result_index));
         }
+
         FileManager::save(playlist_library[index].name() + ".dat",
                           playlist_library[index].list());
+
         playlist_library[index].list().clear();
         FileManager::load(playlist_library[index].name() + ".dat",
                           playlist_library[index].list());
         break;
       }
       case HAPUS_PLAYLIST: {
-        std::string command;
-#ifdef __WIN32__
-        command = "delete '" + playlist_library[index].name() + ".dat'";
-#else
-        command = "rm '" + playlist_library[index].name() + ".dat'";
-#endif
-        system(command.data());
+        deleteFilePlaylist(index);
 
         int target = playlist_library[index].id();
         playlist_library.erase(
             std::remove_if(playlist_library.begin(), playlist_library.end(),
                            [&target](Playlist& p) { return p.id() == target; }),
             playlist_library.end());
-        Playlist::id_counter = 1;
+
         FileManager::save(FileManager::kPlaylist, playlist_library);
+
+        Playlist::id_counter = 1;
         FileManager::load(FileManager::kPlaylist, playlist_library);
         break;
       }
@@ -1425,40 +1442,47 @@ class RAiVFY {
     std::cout << " 1. Tahun Rilis\n";
     std::cout << " 2. Most Played\n";
     std::cout << " 3. Judul\n";
-    std::cout << " 0. Main Menu\n\n";
+    std::cout << " 0. Kembali\n\n";
+
+    int isDescending{0};
 
     int pilihan = getNumberInput<int>(" > Pilih menu: ");
-    int isDescending;
     switch (pilihan) {
       case 1:
         isDescending = opsiSorting() - 1;
+
         SongSorter::quickSort(
             library.database(), 0, library.database().size() - 1,
             (isDescending)
                 ? SongSorter::reverseOrder<Song>(SongSorter::by_release_year)
                 : SongSorter::by_release_year);
+
         daftarLagu(data);
         break;
       case 2:
         isDescending = opsiSorting() - 1;
+
         SongSorter::quickSort(
             library.database(), 0, library.database().size() - 1,
             (isDescending)
                 ? SongSorter::reverseOrder<Song>(SongSorter::by_play_count)
                 : SongSorter::by_play_count);
+
         daftarLagu(data);
         break;
       case 3:
         isDescending = opsiSorting() - 1;
+
         SongSorter::quickSort(
             library.database(), 0, library.database().size() - 1,
             (isDescending)
                 ? SongSorter::reverseOrder<Song>(SongSorter::by_title)
                 : SongSorter::by_title);
+
         daftarLagu(data);
         break;
       case 0:
-        mainMenu();
+        return;
         break;
       default:
         std::cout << " Pilihan menu tidak tersedia!\n";
@@ -1635,6 +1659,7 @@ class RAiVFY {
     TypeTemplate value{};
 
     do {
+      std::cout << "\033[s";
       std::cout << prompt;
       std::cin >> value;
 
@@ -1642,10 +1667,23 @@ class RAiVFY {
         return value;
       }
 
-      std::cout << "Harap hanya input angka!\n";
+      std::cout << "\033[u"; /**< resetore the saved position */
+      std::cout << "\n Hanya menerima input angka!";
+      std::cout << "\033[F"; /**< move cursor up one line */
+      std::cout << "\033[K"; /**< Clear entire line */
       std::cin.clear();
       std::cin.ignore();
     } while (true);
+  }
+
+  void deleteFilePlaylist(int index) {
+    std::string command;
+#ifdef __WIN32__
+    command = "delete '" + playlist_library[index].name() + ".dat'";
+#else
+    command = "rm '" + playlist_library[index].name() + ".dat'";
+#endif
+    system(command.data());
   }
 };
 
