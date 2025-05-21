@@ -1,71 +1,145 @@
 #include <algorithm>
-#include <atomic>
 #include <chrono>
 #include <fstream>
 #include <functional>
 #include <iomanip>
 #include <iostream>
-#include <mutex>
-#include <optional>
 #include <string>
 #include <thread>
 #include <vector>
 
-/*
- * @brief Class Text digunakan untuk memodifikasi atau memanipulasi
- *        tulisan pada console / terminal
- * @param string_view digunakan untuk melihat string (mengurangi overhead
- * program).
+/**
+ * @class Text
+ * @brief Kelas untuk memformat teks pada terminal menggunakan ANSI (American
+ * National Standards Institute) escape code
+ *
+ * Kelas ini menyediakan static method untuk memberikan efek visual text serta
+ * mengatur posisi kursor di terminal
  */
 class Text {
  public:
-  static constexpr int kAnsi = 8;
+  static constexpr int kAnsi =
+      8; /**< Nilai tetap untuk penggunaan std::setw pada teks terformat */
+
+  /**
+   * @brief Memberikan efek bold pada teks
+   *
+   * @param text teks yang ingin diformat
+   * @return std::string dengan format ANSI bold
+   */
   static std::string bold(std::string text) {
     return "\033[1m" + std::string(text) + "\033[0m";
   }
 
+  /**
+   * @brief Memberikan efek redup / faint pada teks
+   *
+   * @param text Teks yang ingin diformat
+   * @return std::string dengan dengan format ANSI faint
+   */
   static std::string faintOff(std::string text) {
     return "\033[2m" + std::string(text) + "\033[0m";
     ;
   }
 
+  /**
+   * @brief Memberikan efek italic pada teks
+   *
+   * @param text Teks yang ingin diformat
+   * @return std::string dengan format ANSI italic
+   */
   static std::string italic(std::string text) {
     return "\033[2m" + std::string(text) + "\033[0m";
   }
 
+  /**
+   * @brief Memberikan efek underline pada teks
+   *
+   * @param text Teks yang ingin diformat
+   * @return std::string dengan format ANSI underline
+   */
   static std::string underline(std::string text) {
     return "\033[4m" + std::string(text) + "\033[0m";
+  }
+
+  /**
+   * @brief Memindahkan posisi cursor ke posisi tertentu di terminal
+   *
+   * @param line Baris tujuan (mulai dari 1)
+   * @param column Kolom tujuan (mulai dari 1)
+   */
+  static void moveCursor(int line, int column) {
+    std::cout << "\033[" << line << ";" << column << "H";
   }
 };
 
 /**
- * @brief Penerapan Linked List menggunakan struct / class
+ * @class Node
+ * @brief Struktur Node untuk Implementasi Linked List Ganda.
  *
- * @tparam T = tipe data yang akan disimpan dalam linkedlist
+ * @tparam T Tipe data yang akan disimpan dalam node
  */
 template <typename T>
 struct Node {
-  T data;
-  Node<T>* previous;
-  Node<T>* next;
+  T data;            /**< Data yang akan disimpan dalam node */
+  Node<T>* previous; /**< Pointer ke node sebelumnya */
+  Node<T>* next;     /**< Pointer ke node selanjutnya */
 
   Node() = default;
+
+  /**
+   * @brief Constructor Node baru dengan data
+   *
+   * @param data Nilai awal yang akan disimpan dalam node
+   *
+   * Pointer node sebelumnya dan selanjutnya akan otomatis memiliki nilai
+   * nullptr
+   */
   Node(const T& data) : data(data), next(nullptr), previous(nullptr) {}
 };
 
+/**
+ * @class LinkedList
+ * @brief Implementasi Linked List Ganda
+ *
+ * @tparam T Tipe data yang akan disimpan dalam list
+ */
 template <typename T>
 class LinkedList {
  public:
+  /**
+   * @brief Constructor default untuk membuat Linked List Ganda
+   *
+   * Pointer awal dan akhir (head and tail) akan otomatis memiliki nilai nullptr
+   * artinya Linked List dalam kondisi kosong
+   */
   LinkedList() : head_(nullptr), tail_(nullptr), node_counter_(0) {}
 
+  /**
+   * @brief Mengambil jumlah node dalam linked list
+   *
+   * @return const int jumlah node saat ini
+   */
   const int count() const { return node_counter_; }
+
+  /**
+   * @brief Mengambil pointer ke node kepala atau awal
+   *
+   * @return Node<T>* Pointer ke kepala / awal
+   */
   Node<T>* head() const { return head_; }
+
+  /**
+   * @brief Mengambil pointer ke node ekor atau akhir
+   *
+   * @return Node<T>* Pointer ke ekor / akhir
+   */
   Node<T>* tail() const { return tail_; }
 
   /**
-   * @brief Push digunakan untuk menyisipkan data di belakang (sisip belakang)
+   * @brief Menambahkan elemen ke bagian belakang list
    *
-   * @param data merupakan tipe data yang akan disimpan
+   * @param data Nilai yang akan ditambahkan
    */
   void push(const T& data) {
     Node<T>* new_node = new Node<T>(data);
@@ -83,11 +157,10 @@ class LinkedList {
   }
 
   /**
-   * @brief Insert digunakan untuk sisip depan (default bila tidak memberikan
-   * position) dan sisip tengah jika mengisi parameter position.
+   * @brief Menambahkan elemen ke bagian depan atau tengah list
    *
-   * @param data
-   * @param position
+   * @param data Nilai yang akan ditambahkan
+   * @param position Urutan dimana node akan ditambahkan (0 = depan)
    */
   void insert(const T& data, int position = 0) {
     Node<T>* new_node = new Node<T>(data);
@@ -131,10 +204,9 @@ class LinkedList {
   }
 
   /**
-   * @brief deleteNode -- fungsi yang digunakan untuk menghapus node berdasarkan
-   * data yang sama
+   * @brief Menghapus node berdasarkan isi data
    *
-   * @param data
+   * @param data data yang akan dihapus
    */
   void deleteNode(const T& data) {
     if (isEmpty()) return;
@@ -164,8 +236,7 @@ class LinkedList {
   }
 
   /**
-   * @brief reverse digunakan untuk memutarbalikkan linked list atau mengubah
-   * urutan linkedlist dari belakang ke depan
+   * @brief Membalik urutan elemen dalam Linked List
    *
    */
   void reverse() {
@@ -190,8 +261,7 @@ class LinkedList {
   }
 
   /**
-   * @brief clear digunakan untuk menghapus seluruh isi linked list tanpa
-   * menyebabkan memory leak
+   * @brief Menghapus seluruh elemen dari linked list
    *
    */
   void clear() {
@@ -207,32 +277,63 @@ class LinkedList {
     node_counter_ = 0;
   }
 
-  Node<T>* head_;
-
+  /**
+   * @brief Mengecek apakah linked list kosong
+   *
+   * @return false jika linked list memiliki node / elemen
+   * @return true jika linked list kosong
+   */
   bool isEmpty() { return !head_; }
 
  private:
-  Node<T>* tail_;
-  size_t node_counter_;
+  Node<T>* head_;       /**< Pointer ke elemen kepala / awal */
+  Node<T>* tail_;       /**< Pointer ke elemen ekor / akhir */
+  size_t node_counter_; /**< Jumlah elemen dallam list */
 
+  /**
+   * @brief Mengecek apakah node kosong
+   *
+   * @param node Pointer node yang ingin dicek
+   * @return true jika elemen kosong
+   * @return false jika elemen memiliki nilai / isi
+   */
   bool isNull(Node<T>* node) { return !node; }
   bool isNotNull(Node<T>* node) { return node; }
 };
 
 /**
- * @brief Implementasi FILE* menggunakan FileManager digunakan untuk menyimpan
- * data playlist yang ingin dibuat dan juga daftar lagu yang tersedia
+ * @class FileManager
+ * @brief Kelas berisi static method untuk melakukan operasi penyimpanan dan
+ * pembacaan data dari file
+ *
+ * Penyimpanan dan pembacaan secara keseluruhan dilakukan untuk binary file
  */
 class FileManager {
  public:
-  static std::string kDatabase;
-  static std::string kPlaylist;
+  static constexpr const char* kDatabase{
+      "DatabaseLagu.dat"}; /**< Nama file default untuk database lagu */
+  static constexpr const char* kPlaylist{
+      "DatabasePlaylist.dat"}; /**< Nama file default untuk database playlist */
 
-  // implementasi save and load untuk vector atau array
+  /**
+   * @brief Menyimpan data bertipe vector ke dalam file biner
+   *
+   * @tparam T Tipe data dalam vector, harus memiliki method serialize() yang
+   * mengatur proses penyimpanan file
+   * @param filename Nama file tujuan penyimpanan (termasuk ekstensi)
+   * @param data Vector berisi elemen yang ingin disiapkan
+   * @return true jika semua elemen berhasil disimpan
+   * @return false jika terjadi error saat penulisan atau serialisasi
+   */
   template <typename T>
   static bool save(const std::string& filename, const std::vector<T>& data) {
     file_ptr = fopen(filename.c_str(), "wb");
-    if (!file_ptr) return false;
+
+    if (!file_ptr) {
+      std::cerr << "Tidak dapat membuka file: " << Text::bold(filename)
+                << "!\n";
+      return false;
+    }
 
     for (T x : data) {
       if (!x.serialize()) {
@@ -245,11 +346,28 @@ class FileManager {
     return true;
   }
 
+  /**
+   * @brief Membaca data dari file dan disimpan ke dalam vector
+   *
+   * @tparam T Tipe data yang akan dibaca, harus memiliki method deserialize()
+   * yang mengatur proses pembacaan file
+   * @param filename Nama file sumber data (termasuk ekstensi)
+   * @param data Vector tujuan untuk menyimpan hasil pembacaan
+   * @return true jika seluruh operasi pembacaan dan deserialisasi berhasil
+   * @return false jika terjadi error saat pembacaan atau pembukaan file
+   */
   template <typename T>
   static bool load(const std::string& filename, std::vector<T>& data) {
     file_ptr = fopen(filename.c_str(), "rb");
-    data.clear();
-    if (!file_ptr) return false;
+
+    data.clear(); /**< Memastikan vector tujuan dalma keadaan kosong untuk
+                     menghindari duplikasi */
+
+    if (!file_ptr) {
+      std::cerr << "Tidak dapat membuka file: " << Text::bold(filename)
+                << "!\n";
+      return false;
+    }
 
     while (true) {
       T x;
@@ -263,11 +381,24 @@ class FileManager {
     return true;
   }
 
-  // implementasi save and load untuk LinkedList
+  /**
+   * @brief Menyimpan data bertipe LinkedList ke dalam file biner
+   *
+   * @tparam T tipe elemen dalma linked list, harus memiliki serialize()
+   * @param filename Nama file tujuan
+   * @param data LinkedList yang akan disimpan
+   * @return true jika semua elemen berhasil disimpan
+   * @return false jika terjadi error saat penulisan atau serialisasi
+   */
   template <typename T>
   static bool save(const std::string& filename, const LinkedList<T>& data) {
     file_ptr = fopen(filename.c_str(), "wb");
-    if (!file_ptr) return false;
+
+    if (!file_ptr) {
+      std::cerr << "Tidak dapat membuka file: " << Text::bold(filename)
+                << "!\n";
+      return false;
+    }
 
     Node<T>* node = data.head();
     while (node) {
@@ -283,10 +414,23 @@ class FileManager {
     return true;
   }
 
+  /**
+   * @brief Membaca data dari file ke dalam LinkedList.
+   *
+   * @tparam T Tipe data yang akan dimasukkan ke dalam list.
+   * @param filename Nama file sumber data.
+   * @param data LinkedList yang akan diisi dengan hasil pembacaan.
+   * @return true Jika semua data berhasil dibaca dan dideserialisasi.
+   * @return false Jika ada kesalahan pembacaan file atau deserialisasi.
+   */
   template <typename T>
   static bool load(const std::string& filename, LinkedList<T>& data) {
     file_ptr = fopen(filename.c_str(), "rb");
-    if (!file_ptr) return false;
+    if (!file_ptr) {
+      std::cerr << "Tidak dapat membuka file: " << Text::bold(filename)
+                << "!\n";
+      return false;
+    }
 
     while (!feof(file_ptr)) {
       T x;
@@ -300,66 +444,134 @@ class FileManager {
     return true;
   }
 
-  // Implementasi fungsi bantuan untuk mencegah kesalahan saat menulis dan
-  // membaca data serta digunakan untuk meningkatkan readabilitas
+  /**
+   * @brief Membaca data dari file.
+   *
+   * @tparam T Tipe data yang ingin dibaca.
+   * @param data Referensi variabel tempat menyimpan hasil pembacaan.
+   * @param length Jumlah elemen yang ingin dibaca (default = 1).
+   * @return true Jika jumlah data yang dibaca sesuai dengan yang diminta.
+   */
   template <typename T>
   static bool read(T& data, size_t length = 1) {
     return fread(&data, sizeof(T), length, file_ptr) == length;
   }
 
+  /**
+   * @brief Membaca string (char array) dari file.
+   *
+   * @param str Buffer tempat menyimpan hasil pembacaan.
+   * @param length Panjang karakter yang akan dibaca.
+   * @return true Jika seluruh karakter berhasil dibaca.
+   */
   static bool read(char* str, size_t length) {
     return fread(str, sizeof(char), length, file_ptr) == length;
   }
 
+  /**
+   * @brief Menulis data ke file.
+   *
+   * @tparam T Tipe data yang akan ditulis.
+   * @param data Data yang ingin disimpan.
+   * @return true Jika penulisan berhasil.
+   */
   template <typename T>
   static bool write(const T& data) {
     return fwrite(&data, sizeof(T), 1, file_ptr) == 1;
   }
+
+  /**
+   * @brief Menulis string (char array) ke file.
+   *
+   * @param str String yang ingin ditulis.
+   * @param length Panjang string yang akan ditulis.
+   * @return true Jika seluruh karakter berhasil ditulis.
+   */
 
   static bool write(const char* str, size_t length) {
     return fwrite(str, sizeof(char), length, file_ptr) == length;
   }
 
  private:
-  static inline FILE* file_ptr{nullptr};
+  static inline FILE* file_ptr{
+      nullptr}; /**< Pointer file global yang digunakan untuk seluruh operasi */
 };
 
-std::string FileManager::kDatabase = "DatabaseLagu.dat";
-std::string FileManager::kPlaylist = "DatabasePlaylist.dat";
-
 /**
- * @brief Song adalah data yang digunakan pada project RAiVFY
+ * @class Song
+ * @brief Struct Song merepresentasikan satu entitas lagu dalam sistem.
  *
+ * Struct ini menyimpan informasi seperti judul lagu, artis, genre, durasi,
+ * tahun rilis, dan jumlah pemutaran. Struct ini juga menyediakan fungsi
+ * untuk serialisasi dan deserialisasi sehingga dapat disimpan atau dibaca dari
+ * file biner.
  */
 struct Song {
-  static size_t id_counter;
-  size_t id;
-  std::string title, artist, genre;
-  size_t duration, playCount{0};
-  int release_year;
+  static size_t id_counter; /**< variabel static untuk auto-increment ID */
+  size_t id;                /**< ID yang nilainya berdasarkan id_counter */
+  std::string title;        /**< Judul Lagu */
+  std::string artist;       /**< Nama penyanyi / pencipta lagu */
+  std::string genre;        /**< Genre lagu */
+  size_t duration;          /**< Durasi lagu dalam detik */
+  size_t play_count;        /**< Jumlah pemutaran lagu */
+  int release_year;         /**< Tahun rilis lagu */
 
-  // Constructor
+  /**
+   * @brief Constructor default, mengatur id berdasarkan id_counter
+   *
+   */
   Song() : id(id_counter) {}
+
+  /**
+   * @brief Constructor berparameter untuk membuat Song berdasarkan nilai
+   * spesifik
+   *
+   * @param title Judul lagu
+   * @param artist Nama penyanyi / pencipta
+   * @param genre Genre lagu
+   * @param release_year Tahun rilis lagu
+   * @param duration Durasi waktu dalam detik
+   * @param play_count jumlah pemutaran awal (opsional, default = 0)
+   */
   Song(const std::string& title, const std::string& artist,
        const std::string& genre, int release_year, size_t duration,
-       size_t playCount = 0)
+       size_t play_count = 0)
       : id(id_counter++),
         title(title),
         artist(artist),
         genre(genre),
         release_year(release_year),
-        duration(duration) {}
+        duration(duration),
+        play_count(play_count) {}
 
-  // Operator Overloading digunakan untuk membantu membandingkan apakah dua lagi
-  // sama atau tidak
+  /**
+   * @brief Operator pembanding untuk mengetahui apakah dua lagu sama.
+   *
+   * Dua lagu dianggap sama jika `title` dan `artist` nya sama.
+   *
+   * @param rhs Lagu lain yang ingin dibandingkan.
+   * @return true jika kedua lagu memiliki judul dan artis yang sama.
+   */
   bool operator==(const Song& rhs) const {
     return title == rhs.title && artist == rhs.artist;
   }
 
+  /**
+   * @brief Operator pembanding tidak sama.
+   *
+   * @param rhs Lagu lain yang ingin dibandingkan.
+   * @return true jika lagu berbeda (berdasarkan title dan artist).
+   */
   bool operator!=(const Song& rhs) const { return !(*this == rhs); }
 
-  // serialize dan deserialize digunakan agar FileManager dapat digunakan untuk
-  // lebih dari satu type data
+  /**
+   * @brief Operasi penyimpanan seluruh atribut lagu ke dalam file biner.
+   *
+   * Fungsi ini digunakan oleh FileManager untuk menyimpan data `Song`
+   * menggunakan fungsi `write()` yang sesuai tipe datanya.
+   *
+   * @return true jika seluruh proses penulisan berhasil.
+   */
   bool serialize() const {
     size_t title_length = title.size();
     size_t genre_length = genre.size();
@@ -374,11 +586,20 @@ struct Song {
     FileManager::write(artist.c_str(), artist_length);
     FileManager::write<int>(release_year);
     FileManager::write<size_t>(duration);
-    FileManager::write<size_t>(playCount);
+    FileManager::write<size_t>(play_count);
 
     return true;
   }
 
+  /**
+   * @brief Operasi pembacaan atribut lagu dari file biner.
+   *
+   * Fungsi ini digunakan oleh FileManager untuk memuat data `Song`
+   * menggunakan fungsi `read()` yang sesuai tipe datanya.
+   * Panjang string dibaca terlebih dahulu, lalu isinya.
+   *
+   * @return true jika seluruh proses pembacaan berhasil.
+   */
   bool deserialize() {
     size_t title_length{0}, genre_length{0}, artist_length{0};
 
@@ -401,7 +622,7 @@ struct Song {
 
     if (!FileManager::read(release_year)) return false;
     if (!FileManager::read(duration)) return false;
-    if (!FileManager::read(playCount)) return false;
+    if (!FileManager::read(play_count)) return false;
 
     Song::id_counter++;
     return true;
@@ -409,48 +630,68 @@ struct Song {
 };
 
 /**
- * @brief User dan UserType merupakan data user yang digunakan untuk fitur login
+ * @class SongSorter
+ * @brief Implementasi algoritma sorting (pengurutan) untuk objek Song.
  *
+ * Kelas ini menyediakan metode Bubble Sort dan Quick Sort yang dapat digunakan
+ * secara fleksibel dengan comparator untuk berbagai field (judul, id, dll).
  */
-enum UserType { LISTENER, ADMIN };
-struct User {
-  size_t id;
-  std::string username, password;
-  UserType type;
-};
 
-/**
- * @brief Implementasi Algoritma Sorting Bubble Sort dan Quick Sort
- *
- */
 class SongSorter {
  public:
-  // Lambda function untuk membuat bubbleSort dan quickSort dapat digunakan
-  // secara flexible untuk mengurutkan data berdasarkan field tertentu
+  /**
+   * @brief Comparator untuk mengurutkan berdasarkan judul lagu (ascending).
+   *
+   * Comparator digunakan untuk membuat algoritma pengurutan dapat digunakan
+   * secara fleksibel untuk mengurutkan data berdasrkan field tertentu
+   */
   static inline auto by_title = [](const Song& a, const Song& b) {
     return a.title <= b.title;
   };
 
+  /**
+   * @brief Comparator untuk mengurutkan berdasarkan ID lagu (ascending).
+   */
   static inline auto by_id = [](const Song& a, const Song& b) {
     return a.id <= b.id;
   };
 
+  /**
+   * @brief Comparator untuk mengurutkan berdasarkan jumlah pemutaran lagu
+   * (ascending).
+   */
   static inline auto by_play_count = [](const Song& a, const Song& b) {
-    return a.playCount <= b.playCount;
+    return a.play_count <= b.play_count;
   };
 
+  /**
+   * @brief Comparator untuk mengurutkan berdasarkan tahun rilis lagu
+   * (ascending).
+   */
   static inline auto by_release_year = [](const Song& a, const Song& b) {
     return a.release_year <= b.release_year;
   };
 
+  /**
+   * @brief Memastikan vektor Song telah terurut berdasarkan ID.
+   *
+   * Memilih algoritma quickSort untuk data > 30 elemen, bubbleSort jika ≤ 30.
+   * @param data Vektor lagu yang akan diurutkan.
+   */
   static void ensureSortedByID(std::vector<Song>& data) {
-    if (data.size() > 30) {
+    if (data.size() > kQuickSortThreshold) {
       quickSort(data, 0, data.size() - 1, by_id);
     } else {
       bubbleSort(data, by_id);
     }
   }
 
+  /**
+   * @brief Mengurutkan data menggunakan Bubble Sort.
+   *
+   * @param data Vektor data lagu.
+   * @param comparator Fungsi pembanding untuk menentukan urutan.
+   */
   static void bubbleSort(
       std::vector<Song>& data,
       std::function<bool(const Song&, const Song&)> comparator) {
@@ -465,6 +706,14 @@ class SongSorter {
     }
   }
 
+  /**
+   * @brief Mengurutkan data menggunakan Quick Sort.
+   *
+   * @param data Vektor data lagu.
+   * @param awal Indeks awal.
+   * @param akhir Indeks akhir.
+   * @param comparator Fungsi pembanding untuk menentukan urutan.
+   */
   static void quickSort(
       std::vector<Song>& data, size_t awal, size_t akhir,
       std::function<bool(const Song&, const Song&)> comparator) {
@@ -475,7 +724,13 @@ class SongSorter {
     }
   }
 
-  // reverseOrder digunakan untuk melakukan pengurutan secara descending
+  /**
+   * @brief Membalikkan urutan comparator menjadi descending.
+   *
+   * @tparam T Tipe data (misalnya: Song).
+   * @param comparator Fungsi pembanding ascending.
+   * @return Comparator yang hasilnya dibalik.
+   */
   template <typename T>
   static std::function<bool(const T&, const T&)> reverseOrder(
       std::function<bool(const T&, const T&)> comparator) {
@@ -483,6 +738,16 @@ class SongSorter {
   }
 
  private:
+  static constexpr size_t kQuickSortThreshold = 30;
+  /**
+   * @brief Fungsi partisi pada algoritma quickSort.
+   *
+   * @param data Vektor lagu.
+   * @param index_awal Indeks awal.
+   * @param index_akhir Indeks akhir.
+   * @param comparator Comparator untuk sorting.
+   * @return Indeks pivot setelah partisi.
+   */
   static size_t partition(
       std::vector<Song>& data, size_t index_awal, size_t index_akhir,
       std::function<bool(const Song&, const Song&)> comparator) {
@@ -501,6 +766,12 @@ class SongSorter {
     return (i + 1);
   }
 
+  /**
+   * @brief Menukar posisi dua elemen dalam array lagu.
+   *
+   * @param data1 Pointer ke elemen pertama.
+   * @param data2 Pointer ke elemen kedua.
+   */
   static void swap(Song* data1, Song* data2) {
     Song temporary = *data1;
     *data1 = *data2;
@@ -509,13 +780,25 @@ class SongSorter {
 };
 
 /**
- * @brief Implementasi Algoritma Searching Binary Search dan Linear Search
+ * @class SongSearcher
+ * @brief Implementasi algoritma searching (penarian) untuk objek Song.
  *
+ * Kelas ini mendukung pencarian berdasarkan genre, artis, dan judul lagu
+ * menggunakan algoritma Binary Search atau Linear Search
  */
 class SongSearcher {
  public:
-  // Algoritma binarySearch digunakan untuk menemukan lagu dengan id tertentu
-  static int result_index;
+  static int result_index; /**< Indeks hasil dari pencarian binarySearch */
+
+  /**
+   * @brief Mencari lagu berdasarkan ID menggunakan algoritma Binary Search.
+   *
+   * Akan mengurutkan data terlebih dahulu jika belum terurut.
+   *
+   * @param target_id ID lagu yang dicari.
+   * @param data Vektor lagu.
+   * @return true jika ditemukan, false jika tidak.
+   */
   static bool binarySearch(size_t target_id, std::vector<Song>& data) {
     if (data.empty()) return false;
 
@@ -540,13 +823,13 @@ class SongSearcher {
     return false;
   }
 
-  // Fungsi untuk mencari lagu berdasarkan field tertentu
-  static std::vector<Song> searchById(int target_id,
-                                      const std::vector<Song>& data) {
-    return linearSearch(
-        data, [target_id](const Song& song) { return song.id == target_id; });
-  }
-
+  /**
+   * @brief Mencari lagu berdasarkan genre (case-insensitive & substring).
+   *
+   * @param genre Genre yang dicari.
+   * @param data Vektor lagu.
+   * @return Vektor lagu yang cocok.
+   */
   static std::vector<Song> searchByGenre(const std::string& genre,
                                          const std::vector<Song>& data) {
     std::string normalized_genre = normalizeString(genre);
@@ -557,6 +840,13 @@ class SongSearcher {
     });
   }
 
+  /**
+   * @brief Mencari lagu berdasarkan artis (case-insensitive & substring).
+   *
+   * @param artist Nama artis.
+   * @param data Vektor lagu.
+   * @return Vektor lagu yang cocok.
+   */
   static std::vector<Song> searchByArtist(const std::string& artist,
                                           const std::vector<Song>& data) {
     std::string normalized_artist = normalizeString(artist);
@@ -567,6 +857,13 @@ class SongSearcher {
     });
   }
 
+  /**
+   * @brief Mencari lagu berdasarkan judul (case-insensitive & substring).
+   *
+   * @param title Judul lagu.
+   * @param data Vektor lagu.
+   * @return Vektor lagu yang cocok.
+   */
   static std::vector<Song> searchByTitle(const std::string& title,
                                          const std::vector<Song>& data) {
     std::string normalized_title = normalizeString(title);
@@ -578,8 +875,13 @@ class SongSearcher {
   }
 
  private:
-  // linearSearch digunakan untuk proses filtering lagu berdasarkan field
-  // tertentu
+  /**
+   * @brief Implementasi pencarian linear (filter) berdasarkan comparator.
+   *
+   * @param data Vektor lagu.
+   * @param comparator Fungsi yang menentukan apakah lagu cocok.
+   * @return Vektor lagu yang memenuhi kondisi comparator.
+   */
   static std::vector<Song> linearSearch(
       const std::vector<Song>& data,
       std::function<bool(const Song&)> comparator) {
@@ -594,6 +896,12 @@ class SongSearcher {
     return filtered_library;
   }
 
+  /**
+   * @brief Menormalisasi string menjadi huruf kecil semua.
+   *
+   * @param string String asli.
+   * @return String hasil normalisasi.
+   */
   static std::string normalizeString(const std::string& string) {
     std::string normalized = string;
     std::transform(normalized.begin(), normalized.end(), normalized.begin(),
@@ -602,10 +910,25 @@ class SongSearcher {
   }
 };
 
+/**
+ * @class SongLibrary
+ * @brief Kelas yang mengatur seluruh operasi terhadap Database Lagu
+ *
+ */
 class SongLibrary {
  public:
+  /**
+   * @brief Mengambil data lagu yang ada di database
+   *
+   * @return std::vector<Song>& Vector berisi lagu dalam database
+   */
   std::vector<Song>& database() { return database_; }
 
+  /**
+   * @brief Menambahkan lagu ke dalam database
+   *
+   * @param song Data yang akan ditambahkan
+   */
   void addToLibrary(const Song& song) {
     if (!SongSearcher::binarySearch(song.id, database_)) {
       database_.push_back(song);
@@ -614,6 +937,11 @@ class SongLibrary {
     SongSorter::ensureSortedByID(database_);
   }
 
+  /**
+   * @brief Menghapus lagu dari database berdasarkan ID
+   *
+   * @param target_id ID lagu yang akan dihapus
+   */
   void removeSongById(int target_id) {
     if (SongSearcher::binarySearch(target_id, database_)) {
       database_.erase(std::remove_if(database_.begin(), database_.end(),
@@ -624,6 +952,12 @@ class SongLibrary {
     }
   }
 
+  /**
+   * @brief Mengambil data dari database berdasarkan ID
+   *
+   * @param target_id ID lagu yang akan diambil
+   * @return Song& Referensi Lagu dari hasil pencarian
+   */
   Song& getSongById(int target_id) {
     if (SongSearcher::binarySearch(target_id, database_)) {
       int result = SongSearcher::result_index;
@@ -633,47 +967,83 @@ class SongLibrary {
   }
 
  private:
-  std::vector<Song> database_;
+  std::vector<Song>
+      database_; /**< Vector berisi seluruh lagu yang ada (database) */
 };
 
+/**
+ * @class Playlist
+ * @brief Kelas yang merepresentasikan sebuah daftar putar (playlist) berisi
+ * lagu-lagu.
+ *
+ * Kelas ini memungkinkan pengguna untuk menambahkan, menghapus, memutar,
+ * menjeda, dan menampilkan lagu-lagu dalam playlist. Lagu-lagu disimpan dalam
+ * struktur data LinkedList.
+ */
 class Playlist {
  public:
-  static size_t id_counter;
-  Playlist() : id_(id_counter) {}
-  Playlist(std::string name) : name_(name), id_(id_counter) { play = false; }
+  static size_t
+      id_counter; /**< Variable untuk auto-increment ID setiap playlist */
 
+  /**
+   * @brief Constructor default, menginisialisasi playlist dengan ID unik
+   * berdasarkan id_counter
+   *
+   */
+  Playlist() : id_(id_counter) {}
+
+  /**
+   * @brief Constructor dengan nama playlist
+   *
+   * @param name Nama dari playlist
+   */
+  Playlist(std::string name) : name_(name), id_(id_counter) {}
+
+  /**
+   * @brief Mengambil data ID dari playlist
+   *
+   * @return const size_t ID unik playlist
+   */
   const size_t id() { return id_; }
+
+  /**
+   * @brief Mengambil nama playlist
+   *
+   * @return const std::string& Nama playlist
+   */
   const std::string& name() { return name_; }
-  const std::string& description() { return description_; }
+
+  /**
+   * @brief Mengambil daftar lagu dalam playlist
+   *
+   * @return LinkedList<Song>& Referensi ke LinkedList berisi lagu-lagu
+   */
   LinkedList<Song>& list() { return list_; }
 
-  void changeName(const std::string& name) {
-    if (name != name_) {
-      name_ = name;
-    }
-  }
-
-  void changeDescription(const std::string& description) {
-    if (description != description_) {
-      description_ = description;
-    }
-  }
-
+  /**
+   * @brief Menambahkan lagu ke dalam playlist
+   *
+   * @param song Lagu yang ingin ditambahkan
+   */
   void addSong(const Song& song) {
     list_.push(song);
     if (current_song_ == nullptr) {
       current_song_ = list_.head();
-      play = true;
     }
   }
 
+  /**
+   * @brief Menghapus lagu dari playlist
+   *
+   * @param song Lagu yang akan dihapus
+   */
   void removeSong(const Song& song) { list_.deleteNode(song); }
 
-  bool pausePlay() {
-    play = !play;
-    return play;
-  }
-
+  /**
+   * @brief Operasi penyimpanan atribut playlist ke dalam file
+   *
+   * @return true jika playlist berhasil disimpan
+   */
   bool serialize() const {
     size_t name_length = name_.size();
 
@@ -683,6 +1053,12 @@ class Playlist {
     return true;
   }
 
+  /**
+   * @brief Operasi pembacaan atribut playlist dari file
+   *
+   * @return true jika seluruh pembacaan berjalan dengan baik
+   * @return false jika terjadi kegagalan dalam pembacaan file
+   */
   bool deserialize() {
     size_t name_length{0};
     if (!FileManager::read(name_length)) return false;
@@ -695,6 +1071,10 @@ class Playlist {
     return true;
   }
 
+  /**
+   * @brief Menampilkan daftar lagu dalam bentuk tabel yang terformat
+   *
+   */
   void displayList() {
     Node<Song>* x = list_.head();
 
@@ -711,24 +1091,27 @@ class Playlist {
       std::cout << std::left << std::setw(5) << x->data.id << std::setw(18)
                 << x->data.title.substr(0, 18) << std::setw(18)
                 << x->data.artist.substr(0, 18) << std::setw(8)
-                << x->data.release_year << std::setw(12) << x->data.playCount
+                << x->data.release_year << std::setw(12) << x->data.play_count
                 << "\n";
       x = x->next;
     }
     std::cout << "\n\n";
   }
 
+  /**
+   * @brief Menampilkan animasi seolah sedang memutar lagu dari playlist
+   *
+   */
   void playbackLoop() {
     current_song_ = list_.head();
-    play = true;
 
-    while (current_song_ && play) {
+    while (current_song_) {
       int remaining = current_song_->data.duration / 10;
       std::string title = current_song_->data.title + "         ";
       size_t move_print = 0;
 
       int tick;
-      while (remaining > 0 && play) {
+      while (remaining > 0) {
         std::cout << "\033[s";
         std::cout << "\033[2;24H";
 
@@ -759,46 +1142,67 @@ class Playlist {
   }
 
  private:
-  LinkedList<Song> list_;
-  Node<Song>* current_song_;
-  bool play;
+  size_t id_;                /**< ID unik dari playlist */
+  std::string name_;         /**< Nama playlist */
+  LinkedList<Song> list_;    /**< Daftar lagu dalam bentuk LinkedList */
+  Node<Song>* current_song_; /**< Pointer ke lagu yang sedang diputar */
 
-  size_t id_;
-  std::string name_;
-  std::string description_;
-
+  /**
+   * @brief Mengganti current_song ke lagu selanjutnya dalam list
+   *
+   */
   void nextSong() {
     if (current_song_ && current_song_->next) {
       current_song_ = current_song_->next;
     }
   }
-
-  void previousSong() {
-    if (current_song_ && current_song_->previous) {
-      current_song_ = current_song_->previous;
-    }
-  }
 };
 
+/// Inisialisasi static variabel
 size_t Song::id_counter = 1;
 size_t Playlist::id_counter = 1;
-int SongSearcher::result_index = 0;
+int SongSearcher::result_index = -1;
 
+/**
+ * @class RAiVFY
+ * @brief Kelas utama yang mengatur seluruh fungsionalitas aplikasi RAiVFY.
+ *
+ * Kelas ini menangani antarmuka pengguna, pemutaran playlist, pengelolaan lagu,
+ * pencarian lagu, serta manajemen file untuk penyimpanan data.
+ */
 class RAiVFY {
  public:
+  /**
+   * @brief Memulai aplikasi RAiVFY.
+   *
+   * Jika terdapat playlist, lagu akan langsung diputar di thread terpisah.
+   * Setelah itu, program menampilkan menu utama.
+   */
   void ignite() {
-    if (!playlist_library.empty()) {
-      std::thread playback(&Playlist::playbackLoop, &playlist_library[0]);
-      playback.detach();
-    }
-
+    int index = 0;
     while (true) {
+      if (!playlist_library.empty()) {
+        std::thread playback(&Playlist::playbackLoop, &playlist_library[index]);
+        playback.detach();
+      }
+
+      if (index < playlist_library.size()) {
+        index++;
+      } else {
+        index = 0;
+      }
+
       mainMenu();
     }
   }
 
+  /**
+   * @brief Memuat data dari file eksternal ke dalam memori.
+   *
+   * Memuat daftar lagu dan playlist dari file menggunakan FileManager.
+   */
   void load() {
-    FileManager::load<Song>(FileManager::kDatabase, database.database());
+    FileManager::load<Song>(FileManager::kDatabase, library.database());
     FileManager::load<Playlist>(FileManager::kPlaylist, playlist_library);
 
     for (auto& p : playlist_library) {
@@ -807,9 +1211,14 @@ class RAiVFY {
   }
 
  private:
-  SongLibrary database;
-  std::vector<Playlist> playlist_library;
+  SongLibrary library; /**< Objek untuk mengatur seluruh operasi database */
+  std::vector<Playlist>
+      playlist_library; /** Koleksi playlist yang dimiliki user */
 
+  /**
+   * @brief Menampilkna menu utama kepada pengguna
+   *
+   */
   void mainMenu() {
     clearScreen();
     printBorder(Text::bold(" RAiVFY "), 11);
@@ -832,17 +1241,21 @@ class RAiVFY {
         daftarPlaylist();
         break;
       case LIST:
-        daftarLagu(database.database());
+        daftarLagu(library.database());
         break;
       case SEARCH:
         searchingLagu();
         waitForInput();
         break;
       default:
-        std::cout << " Menu tidak tersedia!\n";
+        std::cout << " Pilihan menu tidak tersedia!\n";
     }
   }
 
+  /**
+   * @brief Membuat playlist baru berdasarkan input pengguna
+   *
+   */
   void buatPlaylist() {
     clearScreen();
     std::string namaPlaylist;
@@ -877,6 +1290,10 @@ class RAiVFY {
     playlistAction(playlist_library.size() - 1);
   }
 
+  /**
+   * @brief Menampilkan seluruh playlist yang tersedia
+   *
+   */
   void daftarPlaylist() {
     clearScreen();
     printBorder(Text::bold(" Buat Playlist "), playlist_library.size() + 7);
@@ -894,7 +1311,6 @@ class RAiVFY {
 
     if (choice <= 0 || choice > playlist_library.size()) {
       if (choice != 0) std::cout << " Tidak ada playlist yang sesuai!\n";
-      std::cin >> std::ws;
       waitForInput();
       mainMenu();
     }
@@ -902,6 +1318,11 @@ class RAiVFY {
     playlistAction(choice - 1);
   }
 
+  /**
+   * @brief Menangani aksi-aksi yang dapat dilakukan pengguna terhadap playlist
+   *
+   * @param index playlist yang dipilih atau akan diinteraksi
+   */
   void playlistAction(int index) {
     clearScreen();
     if (index < 0) return;
@@ -955,9 +1376,9 @@ class RAiVFY {
       case HAPUS_LAGU: {
         playlist_library[index].displayList();
         size_t selected_id = getNumberInput<size_t>(" Masukan ID lagu : ");
-        if (SongSearcher::binarySearch(selected_id, database.database())) {
+        if (SongSearcher::binarySearch(selected_id, library.database())) {
           playlist_library[index].removeSong(
-              database.database().at(SongSearcher::result_index));
+              library.database().at(SongSearcher::result_index));
         }
         FileManager::save(playlist_library[index].name() + ".dat",
                           playlist_library[index].list());
@@ -986,10 +1407,15 @@ class RAiVFY {
         break;
       }
       default:
-        std::cout << " Menu tidak tersedia!\n";
+        std::cout << " Pilihan menu tidak tersedia!\n";
     }
   }
 
+  /**
+   * @brief Menampilkan daftar lagu dalam bentuk tabel.
+   *
+   * @param data Vektor berisi lagu-lagu yang ingin ditampilkan.
+   */
   void daftarLagu(std::vector<Song>& data) {
     clearScreen();
     printBorder(Text::bold(" Daftar Lagu "), data.size() + 3);
@@ -1007,7 +1433,7 @@ class RAiVFY {
       case 1:
         isDescending = opsiSorting() - 1;
         SongSorter::quickSort(
-            database.database(), 0, database.database().size() - 1,
+            library.database(), 0, library.database().size() - 1,
             (isDescending)
                 ? SongSorter::reverseOrder<Song>(SongSorter::by_release_year)
                 : SongSorter::by_release_year);
@@ -1016,7 +1442,7 @@ class RAiVFY {
       case 2:
         isDescending = opsiSorting() - 1;
         SongSorter::quickSort(
-            database.database(), 0, database.database().size() - 1,
+            library.database(), 0, library.database().size() - 1,
             (isDescending)
                 ? SongSorter::reverseOrder<Song>(SongSorter::by_play_count)
                 : SongSorter::by_play_count);
@@ -1025,7 +1451,7 @@ class RAiVFY {
       case 3:
         isDescending = opsiSorting() - 1;
         SongSorter::quickSort(
-            database.database(), 0, database.database().size() - 1,
+            library.database(), 0, library.database().size() - 1,
             (isDescending)
                 ? SongSorter::reverseOrder<Song>(SongSorter::by_title)
                 : SongSorter::by_title);
@@ -1035,19 +1461,26 @@ class RAiVFY {
         mainMenu();
         break;
       default:
-        std::cout << " Pilihan tidak valid!\n";
+        std::cout << " Pilihan menu tidak tersedia!\n";
         break;
     }
   }
 
+  /**
+   * @brief Menampilkna daftar lagu dalam bentuk tabel terformat
+   *
+   * @param data
+   */
   void tabelLagu(std::vector<Song>& data) {
     clearScreen();
-    std::cout << "\n\n";
+    std::cout << "\n\n"
+              << std::setfill('-') << std::setw(61) << "-" << std::setfill(' ')
+              << "\n";
     std::cout << std::left << std::setw(5 + Text::kAnsi) << Text::bold("No")
-              << std::setw(22 + Text::kAnsi) << Text::bold("Judul")
-              << std::setw(22 + Text::kAnsi) << Text::bold("Artis")
-              << std::setw(8 + Text::kAnsi) << Text::bold("Tahun")
-              << std::setw(12 + Text::kAnsi) << Text::bold("Diputar") << "\n";
+              << std::setw(18 + Text::kAnsi) << Text::bold("Judul")
+              << std::setw(18 + Text::kAnsi) << Text::bold("Artis")
+              << std::setw(5 + Text::kAnsi) << Text::bold("Tahun")
+              << std::setw(15 + Text::kAnsi) << Text::bold("Diputar") << "\n";
     std::cout << std::setfill('-') << std::setw(61) << "-" << std::setfill(' ')
               << "\n";
 
@@ -1055,12 +1488,18 @@ class RAiVFY {
       std::cout << std::left << std::setw(5) << song.id << std::setw(18)
                 << song.title.substr(0, 18) << std::setw(18)
                 << song.artist.substr(0, 18) << std::setw(8)
-                << song.release_year << std::setw(12) << song.playCount << "\n";
+                << song.release_year << std::setw(12) << song.play_count
+                << "\n";
     }
 
     std::cout << "\n\n";
   }
 
+  /**
+   * @brief Menampilkan opsi pengurutan (asceing / descending)
+   *
+   * @return int Pilihan pengguna (1 = ascending, 2 = descending)
+   */
   int opsiSorting() {
     std::cout << "Mau Urutan Berdasarkan :\n";
     std::cout << "1. Ascending\n";
@@ -1070,6 +1509,11 @@ class RAiVFY {
     return getNumberInput<int>();
   }
 
+  /**
+   * @brief Menampilkan menu pencarian lagu
+   *
+   * @return std::vector<Song> Vektor berisi lagu hasil pencarian
+   */
   std::vector<Song> searchingLagu() {
     clearScreen();
     SongSearcher::result_index = -1;
@@ -1090,7 +1534,9 @@ class RAiVFY {
         std::string kata_kunci;
         std::cin.ignore();
         std::getline(std::cin, kata_kunci);
-        filtered = SongSearcher::searchByTitle(kata_kunci, database.database());
+        filtered = SongSearcher::searchByTitle(kata_kunci, library.database());
+
+        printBorder(Text::bold(" Search by [Title] "), filtered.size() + 5);
         tabelLagu(filtered);
         break;
       }
@@ -1100,8 +1546,8 @@ class RAiVFY {
         std::string kata_kunci;
         std::cin.ignore();
         std::getline(std::cin, kata_kunci);
-        filtered =
-            SongSearcher::searchByArtist(kata_kunci, database.database());
+        filtered = SongSearcher::searchByArtist(kata_kunci, library.database());
+        printBorder(Text::bold(" Search by [Artist] "), filtered.size() + 5);
         tabelLagu(filtered);
         break;
       }
@@ -1111,22 +1557,28 @@ class RAiVFY {
         std::string kata_kunci;
         std::cin.ignore();
         std::getline(std::cin, kata_kunci);
-        filtered = SongSearcher::searchByGenre(kata_kunci, database.database());
+        filtered = SongSearcher::searchByGenre(kata_kunci, library.database());
+        printBorder(Text::bold(" Search by [Genre] "), filtered.size() + 5);
         tabelLagu(filtered);
         break;
       }
       case ALL:
-        filtered = database.database();
+        filtered = library.database();
+        printBorder(Text::bold(" Show All Songs "), filtered.size() + 5);
         tabelLagu(filtered);
         std::cin.ignore();
         break;
       default:
-        std::cout << "Menu tidak tersedia!";
+        std::cout << "Pilihan menu tidak tersedia!";
     }
 
     return filtered;
   }
 
+  /**
+   * @brief Membersihkan layar terminal sesuai sistem operasi
+   *
+   */
   void clearScreen() {
 #ifdef __WIN32__
     system("cls");
@@ -1135,24 +1587,30 @@ class RAiVFY {
 #endif
   }
 
+  /**
+   * @brief Menampilkan border (garis atas dan bawah) serta judul halaman
+   *
+   * @param title Judul menu yang ingin ditampilkan di tengah
+   * @param lines Jumlah baris konten untuk menentukan lokasi garis bawah
+   */
   void printBorder(const std::string& title, int lines) {
     const int width = 61;
-    moveCursor(1, 1);
+    Text::moveCursor(1, 1);
     std::cout << std::setfill('-') << std::setw(width) << '-';
-    moveCursor(lines, 1);
+    Text::moveCursor(lines, 1);
     std::cout << std::setfill('-') << std::setw(width) << '-'
               << std::setfill(' ');
 
-    moveCursor(1, width / 2 - 7);
+    Text::moveCursor(1, width / 2 - 7);
     std::cout << title;
 
-    moveCursor(2, 1);
+    Text::moveCursor(2, 1);
   }
 
-  void moveCursor(int line, int column) {
-    std::cout << "\033[" << line << ";" << column << "H";
-  }
-
+  /**
+   * @brief Menunggu input pengguna untu melanjutkan
+   *
+   */
   void waitForInput() {
 #ifdef __WIN32__
     system("pause");
@@ -1162,14 +1620,20 @@ class RAiVFY {
 #endif
   }
 
-  // Error Handling untuk memastikan tidak ada infinite loop
-  // ketika user menginputkan huruf pada variable numerik
+  /**
+   * @brief Memastikan input numerik yang valid dari user
+   *
+   * @tparam TypeTemplate tipe data numerik (int, size, etc)
+   * @param prompt Teks prompt yang akan ditampilkan saat meminta input
+   * @return TypeTemplate Nilai input numerik yang valid dari pengguna
+   */
   template <typename TypeTemplate>
   static TypeTemplate getNumberInput(const std::string& prompt = "") {
     static_assert(std::is_arithmetic<TypeTemplate>::value,
                   "Hanya tipe data numerik!");
 
     TypeTemplate value{};
+
     do {
       std::cout << prompt;
       std::cin >> value;
@@ -1178,15 +1642,13 @@ class RAiVFY {
         return value;
       }
 
+      std::cout << "Harap hanya input angka!\n";
       std::cin.clear();
       std::cin.ignore();
-      std::cout << "Harap hanya input angka!\n";
     } while (true);
   }
 };
 
-// TODO: ADD MORE ERROR HANDLING!
-// OPTIONAL TODO: multithread for playing music
 int main() {
   RAiVFY app;
   app.load();
