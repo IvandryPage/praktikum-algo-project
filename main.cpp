@@ -545,6 +545,7 @@ class SongSearcher {
   static std::vector<Song> searchByGenre(const std::string& genre,
                                          const std::vector<Song>& data) {
     std::string normalized_genre = normalizeString(genre);
+
     return linearSearch(data, [normalized_genre](const Song& song) {
       std::string song_genre = normalizeString(song.genre);
       return song_genre.find(normalized_genre) != std::string::npos;
@@ -554,6 +555,7 @@ class SongSearcher {
   static std::vector<Song> searchByArtist(const std::string& artist,
                                           const std::vector<Song>& data) {
     std::string normalized_artist = normalizeString(artist);
+
     return linearSearch(data, [normalized_artist](const Song& song) {
       std::string song_artist = normalizeString(song.artist);
       return song_artist.find(normalized_artist) != std::string::npos;
@@ -563,6 +565,7 @@ class SongSearcher {
   static std::vector<Song> searchByTitle(const std::string& title,
                                          const std::vector<Song>& data) {
     std::string normalized_title = normalizeString(title);
+
     return linearSearch(data, [normalized_title](const Song& song) {
       std::string song_title = normalizeString(song.title);
       return song_title.find(normalized_title) != std::string::npos;
@@ -703,21 +706,17 @@ class Playlist {
               << std::setw(22 + Text::kAnsi) << Text::bold("Artis")
               << std::setw(8 + Text::kAnsi) << Text::bold("Tahun")
               << std::setw(12 + Text::kAnsi) << Text::bold("Diputar") << "\n";
-    std::cout << std::setfill('-') << std::setw(69) << "-" << std::setfill(' ')
+    std::cout << std::setfill('-') << std::setw(61) << "-" << std::setfill(' ')
               << "\n";
 
     while (x != nullptr) {
-      std::cout << std::left << std::setw(5) << x->data.id        // nomor
-                << std::setw(22) << x->data.title.substr(0, 22)   // judul
-                << std::setw(22) << x->data.artist.substr(0, 22)  // artis
-                << std::setw(8) << x->data.release_year           // tahun
-                << std::setw(12) << x->data.playCount             // diputar
+      std::cout << std::left << std::setw(5) << x->data.id << std::setw(18)
+                << x->data.title.substr(0, 18) << std::setw(18)
+                << x->data.artist.substr(0, 18) << std::setw(8)
+                << x->data.release_year << std::setw(12) << x->data.playCount
                 << "\n";
       x = x->next;
     }
-    std::cout
-        << "\n================================================================"
-           "====\n";
   }
 
  private:
@@ -756,17 +755,14 @@ class RAiVFY {
 
   void mainMenu() {
     clearScreen();
-    std::cout << "=====================================\n";
-    std::cout << "              RAiVFY              \n";
-    std::cout << "=====================================\n";
-    std::cout << " 1.  Buat Playlist\n";
+    printBorder(Text::bold(" RAiVFY "), 11);
+    std::cout << "\n 1.  Buat Playlist\n";
     std::cout << " 2.  Lihat Playlist\n";
     std::cout << " 3.  Daftar Lagu\n";
     std::cout << " 4.  Cari Lagu\n";
     std::cout << " 0.  Keluar\n";
-    std::cout << "-------------------------------------\n";
 
-    int choice = getNumberInput<int>(" Pilihan Menu : ");
+    int choice = getNumberInput<int>(Text::bold("\n > Pilih Menu : "));
     enum mainMenu { KELUAR, BUAT, LIHAT, LIST, SEARCH };
     switch (choice) {
       case KELUAR:
@@ -786,7 +782,7 @@ class RAiVFY {
         waitForInput();
         break;
       default:
-        std::cout << "Menu tidak tersedia!\n";
+        std::cout << " Menu tidak tersedia!\n";
     }
   }
 
@@ -794,9 +790,7 @@ class RAiVFY {
     clearScreen();
     std::string namaPlaylist;
 
-    std::cout << "\n=====================================\n";
-    std::cout << "          BUAT PLAYLIST BARU      \n";
-    std::cout << "=====================================\n";
+    printBorder(" Buat Playlist ", 10);
     std::cout << "\n Masukkan nama playlist baru kamu: ";
 
     std::getline(std::cin >> std::ws, namaPlaylist);
@@ -809,7 +803,8 @@ class RAiVFY {
     }
 
     if (!isValid) {
-      std::cout << "Playlist [" << Text::bold(namaPlaylist) << "] sudah ada!\n";
+      std::cout << " Playlist [" << Text::bold(namaPlaylist)
+                << "] sudah ada!\n";
     } else {
       Playlist p(namaPlaylist);
       playlist_library.emplace_back(p);
@@ -818,8 +813,7 @@ class RAiVFY {
 
       std::cout << "\n Playlist [" << Text::bold(namaPlaylist)
                 << "] berhasil dibuat!\n";
-      std::cout << "Saatnya mengisi playlist ini dengan lagu favoritmu!\n\n";
-      std::cout << "-------------------------------------\n\n";
+      std::cout << " Saatnya mengisi playlist ini dengan lagu favoritmu!\n\n";
     }
 
     waitForInput();
@@ -828,23 +822,21 @@ class RAiVFY {
 
   void daftarPlaylist() {
     clearScreen();
-    std::cout << "\n========================================\n";
-    std::cout << "            DAFTAR PLAYLIST           \n";
-    std::cout << "========================================\n";
-    std::cout << "\n" << Text::bold("Playlist yang Kamu Miliki:\n");
+    printBorder(Text::bold(" Buat Playlist "), playlist_library.size() + 7);
 
+    std::cout << "\n";
     for (auto& p : playlist_library) {
-      std::cout << p.id() << ") " << std::left << std::setw(15)
-                << p.name().substr(0, 10) << "(" << p.list().count()
-                << " songs)"  // nama playlist
+      std::cout << " " << p.id() << ". " << std::left << std::setw(15)
+                << p.name().substr(0, 14) << "(" << p.list().count()
+                << " songs)"
                 << "\n";
     }
-    std::cout << "\n0) Kembali ke Main Menu\n";
+    std::cout << "\n 0. Kembali ke Main Menu\n";
 
-    int choice = getNumberInput<int>(" Pilihan Menu: ");
+    int choice = getNumberInput<int>(Text::bold("\n > Pilih Menu: "));
 
     if (choice <= 0 || choice > playlist_library.size()) {
-      if (choice != 0) std::cout << "Tidak ada playlist yang sesuai!\n";
+      if (choice != 0) std::cout << " Tidak ada playlist yang sesuai!\n";
       std::cin >> std::ws;
       waitForInput();
       mainMenu();
@@ -854,18 +846,19 @@ class RAiVFY {
   }
 
   void playlistAction(int index) {
+    clearScreen();
     if (index < 0) return;
 
-    std::cout << "\nPlaylist [" << Text::bold(playlist_library[index].name())
-              << "] ";
-    std::cout << "\n" << Text::underline("Pilihan Menu:");
-    std::cout << "\n1. Lihat isi playlist";
-    std::cout << "\n2. Tambah lagu ke playlist";
-    std::cout << "\n3. Hapus lagu dari playlist";
-    std::cout << "\n4. Hapus playlist";
-    std::cout << "\n0. Kembali ke menu utama\n";
+    printBorder(
+        " Playlist [" + Text::bold(playlist_library[index].name()) + "] ", 12);
+    std::cout << Text::underline("\n Pilihan Menu:");
+    std::cout << "\n 1. Lihat isi playlist";
+    std::cout << "\n 2. Tambah lagu ke playlist";
+    std::cout << "\n 3. Hapus lagu dari playlist";
+    std::cout << "\n 4. Hapus playlist";
+    std::cout << "\n 0. Kembali ke menu utama\n\n";
 
-    int choice = getNumberInput<int>(" Pilih menu: ");
+    int choice = getNumberInput<int>(" > Pilih menu: ");
 
     enum action { KEMBALI, LIHAT, TAMBAH, HAPUS_LAGU, HAPUS_PLAYLIST };
     switch (choice) {
@@ -873,13 +866,17 @@ class RAiVFY {
         mainMenu();
         break;
       case LIHAT:
+        clearScreen();
+        printBorder(
+            " Playlist [" + Text::bold(playlist_library[index].name()) + "] ",
+            playlist_library[index].list().count() + 3);
         playlist_library[index].displayList();
         std::cin.ignore();
         waitForInput();
         break;
       case TAMBAH: {
         std::vector<Song> filtered = searchingLagu();
-        size_t selected_id = getNumberInput<size_t>("Masukan ID lagu : ");
+        size_t selected_id = getNumberInput<size_t>(" Masukan ID lagu : ");
         if (SongSearcher::binarySearch(selected_id, filtered)) {
           playlist_library[index].addSong(
               filtered.at(SongSearcher::result_index));
@@ -893,7 +890,7 @@ class RAiVFY {
       }
       case HAPUS_LAGU: {
         playlist_library[index].displayList();
-        size_t selected_id = getNumberInput<size_t>("Masukan ID lagu : ");
+        size_t selected_id = getNumberInput<size_t>(" Masukan ID lagu : ");
         if (SongSearcher::binarySearch(selected_id, database.database())) {
           playlist_library[index].removeSong(
               database.database().at(SongSearcher::result_index));
@@ -926,27 +923,22 @@ class RAiVFY {
         break;
       }
       default:
-        std::cout << "Menu tidak tersedia!\n";
+        std::cout << " Menu tidak tersedia!\n";
     }
   }
 
   void daftarLagu(std::vector<Song>& data) {
     clearScreen();
-    std::cout << "\n===========================================\n";
-    std::cout << "               DAFTAR LAGU               \n";
-    std::cout << "===========================================\n";
-    std::cout << "\n Daftar Semua Lagu:\n\n";
-
+    printBorder(Text::bold(" Daftar Lagu "), 15);
     tabelLagu(data);
 
-    std::cout << "\nIngin mengurutkan berdasarkan:\n";
-    std::cout << "1. Tahun Rilis\n";
-    std::cout << "2. Most Played\n";
-    std::cout << "3. Judul\n";
-    std::cout << "0. Main Menu\n";
-    std::cout << "Pilihan: ";
+    std::cout << "\n Ingin mengurutkan berdasarkan:\n";
+    std::cout << " 1. Tahun Rilis\n";
+    std::cout << " 2. Most Played\n";
+    std::cout << " 3. Judul\n";
+    std::cout << " 0. Main Menu\n\n";
 
-    int pilihan = getNumberInput<int>();
+    int pilihan = getNumberInput<int>(" > Pilih menu: ");
     int isDescending;
     switch (pilihan) {
       case 1:
@@ -980,32 +972,34 @@ class RAiVFY {
         mainMenu();
         break;
       default:
-        std::cout << "Pilihan tidak valid!\n";
+        std::cout << " Pilihan tidak valid!\n";
         break;
     }
   }
 
   void tabelLagu(std::vector<Song>& data) {
+    clearScreen();
+    std::cout << "\n\n"
+              << std::setfill('-') << std::setw(61) << "-" << std::setfill(' ')
+              << "\n";
     std::cout << std::left << std::setw(5 + Text::kAnsi) << Text::bold("No")
               << std::setw(22 + Text::kAnsi) << Text::bold("Judul")
               << std::setw(22 + Text::kAnsi) << Text::bold("Artis")
               << std::setw(8 + Text::kAnsi) << Text::bold("Tahun")
               << std::setw(12 + Text::kAnsi) << Text::bold("Diputar") << "\n";
-    std::cout << std::setfill('-') << std::setw(69) << "-" << std::setfill(' ')
+    std::cout << std::setfill('-') << std::setw(61) << "-" << std::setfill(' ')
               << "\n";
 
     for (auto& song : data) {
-      std::cout << std::left << std::setw(5) << song.id        // nomor
-                << std::setw(22) << song.title.substr(0, 22)   // judul
-                << std::setw(22) << song.artist.substr(0, 22)  // artis
-                << std::setw(8) << song.release_year           // tahun
-                << std::setw(12) << song.playCount             // diputar
-                << "\n";
+      std::cout << std::left << std::setw(5) << song.id << std::setw(18)
+                << song.title.substr(0, 18) << std::setw(18)
+                << song.artist.substr(0, 18) << std::setw(8)
+                << song.release_year << std::setw(12) << song.playCount << "\n";
     }
 
-    std::cout
-        << "\n================================================================"
-           "====\n";
+    std::cout << "\n\n"
+              << std::setfill('-') << std::setw(61) << "-" << std::setfill(' ')
+              << "\n";
   }
 
   int opsiSorting() {
@@ -1018,22 +1012,21 @@ class RAiVFY {
   }
 
   std::vector<Song> searchingLagu() {
+    clearScreen();
     SongSearcher::result_index = -1;
-    std::cout << "\n=====================================\n";
-    std::cout << "           CARI LAGU               \n";
-    std::cout << "=====================================\n";
-    std::cout << "Opsi Searching: \n";
-    std::cout << "1. Judul\n";
-    std::cout << "2. Artist\n";
-    std::cout << "3. Genre\n";
-    std::cout << "4. Show All\n";
+    printBorder(Text::bold(" Search Lagu "), 11);
+    std::cout << "\n Opsi Searching: \n";
+    std::cout << " 1. Judul\n";
+    std::cout << " 2. Artist\n";
+    std::cout << " 3. Genre\n";
+    std::cout << " 4. Show All\n\n";
 
-    int choice = getNumberInput<int>("Pilih opsi : ") - 1;
+    int choice = getNumberInput<int>(Text::bold(" > Pilih metode : ")) - 1;
     enum search { JUDUL, ARTIST, GENRE, ALL };
     std::vector<Song> filtered;
     switch (choice) {
       case JUDUL: {
-        std::cout << "Masukkan kata kunci: ";
+        std::cout << " Masukkan kata kunci: ";
 
         std::string kata_kunci;
         std::cin.ignore();
@@ -1043,7 +1036,7 @@ class RAiVFY {
         break;
       }
       case ARTIST: {
-        std::cout << "Masukkan kata kunci: ";
+        std::cout << " Masukkan kata kunci: ";
 
         std::string kata_kunci;
         std::cin.ignore();
@@ -1054,7 +1047,7 @@ class RAiVFY {
         break;
       }
       case GENRE: {
-        std::cout << "Masukkan kata kunci: ";
+        std::cout << " Masukkan kata kunci: ";
 
         std::string kata_kunci;
         std::cin.ignore();
@@ -1083,11 +1076,29 @@ class RAiVFY {
 #endif
   }
 
+  void printBorder(const std::string& title, int lines) {
+    const int width = 61;
+    moveCursor(1, 1);
+    std::cout << std::setfill('-') << std::setw(width) << '-';
+    moveCursor(lines, 1);
+    std::cout << std::setfill('-') << std::setw(width) << '-'
+              << std::setfill(' ');
+
+    moveCursor(1, width / 2 - 7);
+    std::cout << title;
+
+    moveCursor(2, 1);
+  }
+
+  void moveCursor(int line, int column) {
+    std::cout << "\033[" << line << ";" << column << "H";
+  }
+
   void waitForInput() {
 #ifdef __WIN32__
     system("pause");
 #else
-    std::cout << "Tekan tombol enter untuk melanjutkan...";
+    std::cout << " Tekan tombol enter untuk melanjutkan...";
     std::cin.get();
 #endif
   }
