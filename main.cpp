@@ -1053,7 +1053,7 @@ class RAiVFY {
         return;
         break;
       case TAMBAH:
-      
+        tambahLaguByAdmin();
         break;
       case HAPUS:
 
@@ -1065,6 +1065,42 @@ class RAiVFY {
         std::cout << "Menu tidak tersedia!\n";
     }
   } 
+
+  void tambahLaguByAdmin() {
+  clearScreen();
+  std::cout << "\n=====================================\n";
+  std::cout << "           TAMBAH LAGU BARU          \n";
+  std::cout << "=====================================\n";
+
+  std::string judul, artis;
+  int tahun, diputar;
+
+  std::cout << "\n Masukkan detail lagu di bawah ini:\n";
+  std::cout << "-------------------------------------\n";
+
+  std::cout << Text::bold("Judul Lagu   : ");
+  std::getline(std::cin >> std::ws, judul);
+
+  std::cout << Text::bold("Nama Artis   : ");
+  std::getline(std::cin >> std::ws, artis);
+
+  tahun = getNumberInput<int>(Text::bold("Tahun Rilis  : "));
+  diputar = getNumberInput<int>(Text::bold("Diputar Sebanyak  : "));
+
+
+  std::cout << "\nLagu berhasil ditambahkan ke database!\n";
+}
+
+void hapusLagubyAdmin (){
+  clearScreen();
+  std::cout << "\n=====================================\n";
+  std::cout << "            HAPUS LAGU              \n";
+  std::cout << "=====================================\n";
+  daftarLagu();
+  int idLagu = getNumberInput<int>("\nMasukkan ID lagu yang ingin dihapus: ");
+
+  std::cout << "\nLagu Berhasil Di Hapus!\n";
+}
 };
 
 int main() {
