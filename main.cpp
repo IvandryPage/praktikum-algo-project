@@ -669,7 +669,6 @@ class Playlist {
 
   void displayList() {
     // TODO: Display;
-    
   }
 
  private:
@@ -715,19 +714,19 @@ int SongSearcher::result_index = 0;
 class RAiVFY {
  public:
   void ignite() {
- while (true) {
-    loginAsAdmin = login();
-
     while (true) {
-      if (loginAsAdmin)
-        menuAdmin();
-      else
-        mainMenu();
+      loginAsAdmin = login();
 
-      break; // keluar dari inner loop, lalu login lagi
+      while (true) {
+        if (loginAsAdmin)
+          menuAdmin();
+        else
+          mainMenu();
+
+        break;  // keluar dari inner loop, lalu login lagi
+      }
     }
   }
-}
 
   void load() {
     FileManager::load<Song>(FileManager::kDatabase, database.database());
@@ -1022,21 +1021,20 @@ class RAiVFY {
       std::cout << "Harap hanya input angka!\n";
     } while (true);
   }
-  bool login(){
+  bool login() {
     std::cout << "\n===================================================\n";
     std::cout << "            SELAMAT DATANG DI RAiVFY!              \n";
     std::cout << "===================================================\n";
     std::string username;
     std::cout << "\nSilahkan masuk dengan username Anda!\n\n";
-    std::cout << Text::bold("Username: ") ;
+    std::cout << Text::bold("Username: ");
 
     std::getline(std::cin, username);
-    if (username == "admin")
-     return true;
+    if (username == "admin") return true;
     return false;
   }
 
-  void menuAdmin(){
+  void menuAdmin() {
     std::cout << "=====================================\n";
     std::cout << "              HI ADMIN!              \n";
     std::cout << "=====================================\n";
@@ -1047,7 +1045,7 @@ class RAiVFY {
     std::cout << "-------------------------------------\n";
 
     int choice = getNumberInput<int>(" Pilihan Menu : ");
-    enum mainMenu { KELUAR, TAMBAH, HAPUS, DAFTAR};
+    enum mainMenu { KELUAR, TAMBAH, HAPUS, DAFTAR };
     switch (choice) {
       case KELUAR:
         return;
@@ -1064,43 +1062,59 @@ class RAiVFY {
       default:
         std::cout << "Menu tidak tersedia!\n";
     }
-  } 
+  }
 
   void tambahLaguByAdmin() {
-  clearScreen();
-  std::cout << "\n=====================================\n";
-  std::cout << "           TAMBAH LAGU BARU          \n";
-  std::cout << "=====================================\n";
+    clearScreen();
+    std::cout << "\n=====================================\n";
+    std::cout << "           TAMBAH LAGU BARU          \n";
+    std::cout << "=====================================\n";
 
-  std::string judul, artis;
-  int tahun, diputar;
+    std::string judul, artis, genre;
+    int tahun, diputar, durasi;
 
-  std::cout << "\n Masukkan detail lagu di bawah ini:\n";
-  std::cout << "-------------------------------------\n";
+    std::cout << "\n Masukkan detail lagu di bawah ini:\n";
+    std::cout << "-------------------------------------\n";
 
-  std::cout << Text::bold("Judul Lagu   : ");
-  std::getline(std::cin >> std::ws, judul);
+    std::cout << Text::bold("Judul Lagu   : ");
+    std::getline(std::cin >> std::ws, judul);
 
-  std::cout << Text::bold("Nama Artis   : ");
-  std::getline(std::cin >> std::ws, artis);
+    std::cout << Text::bold("Nama Artis   : ");
+    std::getline(std::cin >> std::ws, artis);
 
-  tahun = getNumberInput<int>(Text::bold("Tahun Rilis  : "));
-  diputar = getNumberInput<int>(Text::bold("Diputar Sebanyak  : "));
+    std::cout << Text::bold("Genre        : ");
+    std::getline(std::cin >> std::ws, genre);
 
+    tahun = getNumberInput<int>(Text::bold("Tahun Rilis  : "));
+    durasi = getNumberInput<int>(Text::bold("Durasi dalam detik  : "));
 
-  std::cout << "\nLagu berhasil ditambahkan ke database!\n";
-}
+    diputar = getNumberInput<int>(Text::bold("Diputar Sebanyak  : "));
 
-void hapusLagubyAdmin (){
-  clearScreen();
-  std::cout << "\n=====================================\n";
-  std::cout << "            HAPUS LAGU              \n";
-  std::cout << "=====================================\n";
-  daftarLagu();
-  int idLagu = getNumberInput<int>("\nMasukkan ID lagu yang ingin dihapus: ");
+    database.addToLibrary(Song(judul, artis, genre, durasi, tahun, diputar));
+    FileManager::save(FileManager::kDatabase, database.database());
 
-  std::cout << "\nLagu Berhasil Di Hapus!\n";
-}
+    std::cout << "\nLagu berhasil ditambahkan ke database!\n";
+  }
+
+  void hapusLagubyAdmin() {
+    clearScreen();
+    std::cout << "\n=====================================\n";
+    std::cout << "            HAPUS LAGU              \n";
+    std::cout << "=====================================\n";
+    daftarLagu();
+    int idLagu = getNumberInput<int>("\nMasukkan ID lagu yang ingin dihapus: ");
+
+    database.database().erase(
+        std::remove_if(database.database().begin(), database.database().end(),
+                       [&idLagu](Song& p) { return p.id == idLagu; }),
+        database.database().end());
+    Song::id_counter = 1;
+
+    FileManager::save(FileManager::kDatabase, database.database());
+    FileManager::load(FileManager::kDatabase, database.database());
+
+    std::cout << "\nLagu Berhasil Di Hapus!\n";
+  }
 };
 
 int main() {
