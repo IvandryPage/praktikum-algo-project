@@ -1251,7 +1251,6 @@ class RAiVFY {
         break;
       case SEARCH:
         searchingLagu();
-        waitForInput();
         break;
       default:
         std::cout << " Pilihan menu tidak tersedia!\n";
@@ -1360,7 +1359,11 @@ class RAiVFY {
             " Playlist [" + Text::bold(playlist_library[index].name()) + "] ",
             playlist_library[index].list().count() + 3);
 
-        playlist_library[index].displayList();
+        if (!playlist_library[index].list().isEmpty()) {
+          playlist_library[index].displayList();
+        } else {
+          std::cout << " Playlist masih kosong!\n";
+        }
 
         std::cin.ignore();
         waitForInput();
@@ -1368,6 +1371,9 @@ class RAiVFY {
       }
       case TAMBAH: {
         std::vector<Song> filtered = searchingLagu();
+        if (filtered.empty()) {
+          break;
+        }
 
         size_t selected_id = getNumberInput<size_t>(" Masukan ID lagu : ");
         if (SongSearcher::binarySearch(selected_id, filtered)) {
@@ -1385,13 +1391,24 @@ class RAiVFY {
       }
       case REVERSE: {
         playlist_library[index].list().reverse();
-        playlist_library[index].displayList();
+        if (!playlist_library[index].list().isEmpty()) {
+          playlist_library[index].displayList();
+        } else {
+          std::cout << "\n Playlist masih kosong!\n";
+        }
 
         std::cin.ignore();
         waitForInput();
         break;
       }
       case HAPUS_LAGU: {
+        if (playlist_library[index].list().isEmpty()) {
+          std::cout << "\n Playlist masih kosong!\n";
+          std::cin.ignore();
+          waitForInput();
+          break;
+        }
+
         playlist_library[index].displayList();
 
         size_t selected_id = getNumberInput<size_t>(" Masukan ID lagu : ");
@@ -1426,6 +1443,8 @@ class RAiVFY {
       default:
         std::cout << " Pilihan menu tidak tersedia!\n";
     }
+
+    clearScreen();
   }
 
   /**
@@ -1435,7 +1454,15 @@ class RAiVFY {
    */
   void daftarLagu(std::vector<Song>& data) {
     clearScreen();
+
     printBorder(Text::bold(" Daftar Lagu "), data.size() + 3);
+    if (library.database().empty()) {
+      std::cout << "Database masih kosong!\n";
+      std::cin.ignore();
+      waitForInput();
+      return;
+    }
+
     tabelLagu(data);
 
     std::cout << "\n Ingin mengurutkan berdasarkan:\n";
@@ -1488,6 +1515,7 @@ class RAiVFY {
         std::cout << " Pilihan menu tidak tersedia!\n";
         break;
     }
+    clearScreen();
   }
 
   /**
@@ -1553,7 +1581,7 @@ class RAiVFY {
     std::vector<Song> filtered;
     switch (choice) {
       case JUDUL: {
-        std::cout << " Masukkan kata kunci: ";
+        std::cout << " Masukkan judul: ";
 
         std::string kata_kunci;
         std::cin.ignore();
@@ -1561,18 +1589,29 @@ class RAiVFY {
         filtered = SongSearcher::searchByTitle(kata_kunci, library.database());
 
         printBorder(Text::bold(" Search by [Title] "), filtered.size() + 5);
-        tabelLagu(filtered);
+        if (!filtered.empty()) {
+          tabelLagu(filtered);
+        } else {
+          std::cout << " Lagu dengan judul " << kata_kunci
+                    << " tidak ditemukan!\n";
+        }
         break;
       }
       case ARTIST: {
-        std::cout << " Masukkan kata kunci: ";
+        std::cout << " Masukkan artis: ";
 
         std::string kata_kunci;
         std::cin.ignore();
         std::getline(std::cin, kata_kunci);
         filtered = SongSearcher::searchByArtist(kata_kunci, library.database());
         printBorder(Text::bold(" Search by [Artist] "), filtered.size() + 5);
-        tabelLagu(filtered);
+        if (!filtered.empty()) {
+          tabelLagu(filtered);
+        } else {
+          std::cout << " Lagu dengan artis " << kata_kunci
+                    << " tidak ditemukan!\n";
+          waitForInput();
+        }
         break;
       }
       case GENRE: {
@@ -1583,13 +1622,26 @@ class RAiVFY {
         std::getline(std::cin, kata_kunci);
         filtered = SongSearcher::searchByGenre(kata_kunci, library.database());
         printBorder(Text::bold(" Search by [Genre] "), filtered.size() + 5);
-        tabelLagu(filtered);
+        if (!filtered.empty()) {
+          tabelLagu(filtered);
+        } else {
+          clearScreen();
+          std::cout << " Lagu dengan genre " << kata_kunci
+                    << " tidak ditemukan!\n";
+          waitForInput();
+        }
         break;
       }
       case ALL:
         filtered = library.database();
         printBorder(Text::bold(" Show All Songs "), filtered.size() + 5);
-        tabelLagu(filtered);
+        if (!filtered.empty()) {
+          tabelLagu(library.database());
+        } else {
+          clearScreen();
+          std::cout << "Database masih kosong!\n";
+          waitForInput();
+        }
         std::cin.ignore();
         break;
       default:
@@ -1639,7 +1691,7 @@ class RAiVFY {
 #ifdef __WIN32__
     system("pause");
 #else
-    std::cout << " Tekan tombol enter untuk melanjutkan...";
+    std::cout << "\033[K Tekan tombol enter untuk melanjutkan...";
     std::cin.get();
 #endif
   }
