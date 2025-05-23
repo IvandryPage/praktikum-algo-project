@@ -1184,7 +1184,19 @@ class RAiVFY {
    */
   void ignite() {
     int index = 0;
+    isAdmin = false;
+    isLogin = login();
+
     while (true) {
+      if (!isLogin) {
+        login();
+      }
+
+      if (isAdmin) {
+        menuAdmin();
+        continue;
+      }
+
       if (!playlist_library.empty()) {
         std::thread playback(&Playlist::playbackLoop, &playlist_library[index]);
         playback.detach();
@@ -1217,6 +1229,8 @@ class RAiVFY {
   SongLibrary library; /**< Objek untuk mengatur seluruh operasi database */
   std::vector<Playlist>
       playlist_library; /** Koleksi playlist yang dimiliki user */
+  bool isAdmin,
+      isLogin; /** Menentukan user login atau belum & admin atau bukan */
 
   /**
    * @brief Menampilkna menu utama kepada pengguna
@@ -1237,9 +1251,23 @@ class RAiVFY {
     int choice = getNumberInput<int>(Text::bold(" > Pilih Menu : "));
 
     switch (choice) {
-      case KELUAR:
-        exit(0);
+      case KELUAR: {
+        std::cout << "\n\n Pilihan: \n";
+        std::cout << " 1. Login\n";
+        std::cout << " 2. Exit\n";
+
+        enum menuKeluar { LOGIN, EXIT };
+        int choice = getNumberInput<int>("\n > Ketik input: ") - 1;
+        switch (choice) {
+          case LOGIN:
+            isLogin = false;
+            break;
+          case EXIT:
+            exit(0);
+            break;
+        }
         break;
+      }
       case BUAT:
         buatPlaylist();
         break;
@@ -1324,7 +1352,8 @@ class RAiVFY {
   }
 
   /**
-   * @brief Menangani aksi-aksi yang dapat dilakukan pengguna terhadap playlist
+   * @brief Menangani aksi-aksi yang dapat dilakukan pengguna terhadap
+   * playlist
    *
    * @param index playlist yang dipilih atau akan diinteraksi
    */
@@ -1736,6 +1765,111 @@ class RAiVFY {
     command = "rm '" + playlist_library[index].name() + ".dat'";
 #endif
     system(command.data());
+  }
+
+  bool login() {
+    clearScreen();
+    std::cout << "\n===================================================\n";
+    std::cout << "            SELAMAT DATANG DI RAiVFY!              \n";
+    std::cout << "===================================================\n";
+    std::string username;
+    std::cout << "\nSilahkan masuk dengan username Anda!\n\n";
+    std::cout << Text::bold("Username: ");
+
+    if (std::cin.peek() == '\n') std::cin.ignore();
+    std::getline(std::cin, username);
+
+    if (username == "admin") {
+      isAdmin = true;
+    }
+
+    return true;
+  }
+
+  void menuAdmin() {
+    clearScreen();
+    std::cout << "=====================================\n";
+    std::cout << "              HI ADMIN!              \n";
+    std::cout << "=====================================\n";
+    std::cout << " 1.  Tambah Lagu\n";
+    std::cout << " 2.  Hapus Lagu\n";
+    std::cout << " 3.  Daftar Lagu\n";
+    std::cout << " 0.  Keluar\n";
+    std::cout << "-------------------------------------\n";
+
+    int choice = getNumberInput<int>(" Pilihan Menu : ");
+    enum mainMenu { KELUAR, TAMBAH, HAPUS, DAFTAR };
+    switch (choice) {
+      case KELUAR:
+        isAdmin = false;
+        isLogin = false;
+        return;
+        break;
+      case TAMBAH:
+        tambahLaguByAdmin();
+        break;
+      case HAPUS:
+        hapusLagubyAdmin();
+        break;
+      case DAFTAR:
+        daftarLagu(library.database());
+        break;
+      default:
+        std::cout << "Menu tidak tersedia!\n";
+    }
+  }
+
+  void tambahLaguByAdmin() {
+    clearScreen();
+    std::cout << "\n=====================================\n";
+    std::cout << "           TAMBAH LAGU BARU          \n";
+    std::cout << "=====================================\n";
+
+    std::string judul, artis, genre;
+    int tahun, diputar, durasi;
+
+    std::cout << "\n Masukkan detail lagu di bawah ini:\n";
+    std::cout << "-------------------------------------\n";
+
+    std::cout << Text::bold("Judul Lagu   : ");
+    std::getline(std::cin >> std::ws, judul);
+
+    std::cout << Text::bold("Nama Artis   : ");
+    std::getline(std::cin >> std::ws, artis);
+
+    std::cout << Text::bold("Genre        : ");
+    std::getline(std::cin >> std::ws, genre);
+
+    tahun = getNumberInput<int>(Text::bold("Tahun Rilis  : "));
+    durasi = getNumberInput<int>(Text::bold("Durasi dalam detik  : "));
+
+    diputar = getNumberInput<int>(Text::bold("Diputar Sebanyak  : "));
+
+    library.addToLibrary(Song(judul, artis, genre, durasi, tahun, diputar));
+    FileManager::save(FileManager::kDatabase, library.database());
+
+    std::cout << "\nLagu berhasil ditambahkan ke database!\n";
+  }
+
+  void hapusLagubyAdmin() {
+    clearScreen();
+    std::cout << "\n=====================================\n";
+    std::cout << "            HAPUS LAGU              \n";
+    std::cout << "=====================================\n";
+
+    tabelLagu(library.database());
+    int idLagu = getNumberInput<int>("\nMasukkan ID lagu yang ingin dihapus: ");
+
+    library.database().erase(
+        std::remove_if(library.database().begin(), library.database().end(),
+                       [&idLagu](Song& p) { return p.id == idLagu; }),
+        library.database().end());
+    Song::id_counter = 1;
+
+    FileManager::save(FileManager::kDatabase, library.database());
+    FileManager::load(FileManager::kDatabase, library.database());
+
+    std::cout << "\nLagu Berhasil Di Hapus!\n";
   }
 };
 
