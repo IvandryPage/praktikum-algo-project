@@ -718,12 +718,11 @@ class RAiVFY {
       loginAsAdmin = login();
 
       while (true) {
+        clearScreen();
         if (loginAsAdmin)
           menuAdmin();
         else
           mainMenu();
-
-        break;  // keluar dari inner loop, lalu login lagi
       }
     }
   }
@@ -1021,6 +1020,7 @@ class RAiVFY {
       std::cout << "Harap hanya input angka!\n";
     } while (true);
   }
+
   bool login() {
     std::cout << "\n===================================================\n";
     std::cout << "            SELAMAT DATANG DI RAiVFY!              \n";
@@ -1054,7 +1054,7 @@ class RAiVFY {
         tambahLaguByAdmin();
         break;
       case HAPUS:
-
+        hapusLagubyAdmin();
         break;
       case DAFTAR:
         daftarLagu();
@@ -1101,7 +1101,8 @@ class RAiVFY {
     std::cout << "\n=====================================\n";
     std::cout << "            HAPUS LAGU              \n";
     std::cout << "=====================================\n";
-    daftarLagu();
+
+    // tabel lagu
     int idLagu = getNumberInput<int>("\nMasukkan ID lagu yang ingin dihapus: ");
 
     database.database().erase(
