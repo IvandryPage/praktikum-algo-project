@@ -667,15 +667,15 @@ class SongSorter {
    * secara fleksibel untuk mengurutkan data berdasrkan field tertentu
    */
   static inline auto by_title = [](const Song& a, const Song& b) {
-    return std::strcmp(a.title, b.title) <= 0;
+    return std::strcmp(a.title, b.title) < 0;
   };
 
   /**
    * @brief Comparator untuk mengurutkan berdasarkan ID lagu (ascending).
    */
   static inline auto by_id = [](const Song& a, const Song& b) {
-    if (a.id == 0) return false;
-    if (b.id == 0) return true;
+    // if (a.id == 0) return false;
+    // if (b.id == 0) return true;
     return a.id < b.id;
   };
 
@@ -684,6 +684,8 @@ class SongSorter {
    * (ascending).
    */
   static inline auto by_play_count = [](const Song& a, const Song& b) {
+    // if (a.play_count == 0) return false;
+    // if (b.play_count == 0) return true;
     return a.play_count < b.play_count;
   };
 
@@ -692,6 +694,8 @@ class SongSorter {
    * (ascending).
    */
   static inline auto by_release_year = [](const Song& a, const Song& b) {
+    // if (a.release_year == 0) return false;
+    // if (b.release_year == 0) return true;
     return a.release_year < b.release_year;
   };
 
@@ -720,17 +724,12 @@ class SongSorter {
       std::function<bool(const Song&, const Song&)> comparator) {
     if (data.empty()) return;
 
-    for (size_t i = 0; i < data.size() - 1; ++i) {
-      bool swapped = false;
-
+    for (size_t i = 0; i < data.size(); ++i) {
       for (size_t j = 0; j < data.size() - i - 1; ++j) {
         if (comparator(data.arr[j + 1], data.arr[j])) {
           swap(&data.arr[j], &data.arr[j + 1]);
-          swapped = true;
         }
       }
-
-      if (!swapped) break;
     }
   }
 
@@ -782,16 +781,16 @@ class SongSorter {
     Song pivot = data.arr[index_akhir];
     size_t i = index_awal;
 
-    for (size_t j = index_awal; j < index_akhir; j++) {
+    for (size_t j = index_awal; j < index_akhir; ++j) {
       if (comparator(data.arr[j], pivot)) {
-        i++;
         swap(&data.arr[j], &data.arr[i]);
+        i++;
       }
     }
 
-    swap(&data.arr[i + 1], &data.arr[index_akhir]);
+    swap(&data.arr[i], &data.arr[index_akhir]);
 
-    return (i + 1);
+    return (i);
   }
 
   /**
@@ -977,7 +976,7 @@ class SongLibrary {
    */
   void removeSongById(size_t target_id) {
     if (SongSearcher::binarySearch(target_id, database_)) {
-      for (size_t i = 0; i < database_.size() - 1; i++) {
+      for (size_t i = 0; i < database_.size(); i++) {
         if (database_.arr[i].id == target_id) {
           for (size_t j = i; j < database_.size() - 1; j++) {
             database_.arr[j] = database_.arr[j + 1];
@@ -1034,7 +1033,7 @@ class Playlist {
    *
    * @param name Nama dari playlist
    */
-  Playlist(std::string name) : id_(id_counter) {
+  Playlist(std::string name) : id_(id_counter++) {
     std::strcpy(name_, name.c_str());
   }
 
@@ -1315,7 +1314,7 @@ class RAiVFY {
         daftarPlaylist();
         break;
       case LIST:
-        daftarLagu(library.database());
+        daftarLagu();
         break;
       case SEARCH:
         searchingLagu();
@@ -1407,7 +1406,7 @@ class RAiVFY {
 
     printBorder(
         " Playlist [" + Text::bold(playlist_library.arr[index].name()) + "] ",
-        11);
+        12);
     std::cout << "\n" << Text::underline(" Pilihan Menu:\n");
     std::cout << " 1. Lihat isi playlist\n";
     std::cout << " 2. Tambah lagu ke playlist\n";
@@ -1458,18 +1457,6 @@ class RAiVFY {
                           playlist_library.arr[index].list());
         break;
       }
-      case REVERSE: {
-        playlist_library.arr[index].list().reverse();
-        if (!playlist_library.arr[index].list().isEmpty()) {
-          playlist_library.arr[index].displayList();
-        } else {
-          std::cout << "\n Playlist masih kosong!\n";
-        }
-
-        std::cin.ignore();
-        waitForInput();
-        break;
-      }
       case HAPUS_LAGU: {
         if (playlist_library.arr[index].list().isEmpty()) {
           std::cout << "\n Playlist masih kosong!\n";
@@ -1514,6 +1501,18 @@ class RAiVFY {
         FileManager::load(FileManager::kPlaylist, playlist_library);
         break;
       }
+      case REVERSE: {
+        playlist_library.arr[index].list().reverse();
+        if (!playlist_library.arr[index].list().isEmpty()) {
+          playlist_library.arr[index].displayList();
+        } else {
+          std::cout << "\n Playlist masih kosong!\n";
+        }
+
+        std::cin.ignore();
+        waitForInput();
+        break;
+      }
       default:
         std::cout << " Pilihan menu tidak tersedia!\n";
     }
@@ -1526,10 +1525,10 @@ class RAiVFY {
    *
    * @param data ArrayList berisi lagu-lagu yang ingin ditampilkan.
    */
-  void daftarLagu(ArrayList<Song>& data) {
+  void daftarLagu() {
     clearScreen();
 
-    printBorder(Text::bold(" Daftar Lagu "), data.size() + 3);
+    printBorder(Text::bold(" Daftar Lagu "), library.database().size() + 3);
     if (library.database().empty()) {
       std::cout << "Database masih kosong!\n";
       std::cin.ignore();
@@ -1537,7 +1536,7 @@ class RAiVFY {
       return;
     }
 
-    tabelLagu(data, false);
+    tabelLagu(library.database(), false);
 
     std::cout << "\n Ingin mengurutkan berdasarkan:\n";
     std::cout << " 1. Tahun Rilis\n";
@@ -1558,7 +1557,7 @@ class RAiVFY {
                 ? SongSorter::reverseOrder<Song>(SongSorter::by_release_year)
                 : SongSorter::by_release_year);
 
-        daftarLagu(data);
+        daftarLagu();
         break;
       case 2:
         isDescending = opsiSorting() - 1;
@@ -1569,7 +1568,7 @@ class RAiVFY {
                 ? SongSorter::reverseOrder<Song>(SongSorter::by_play_count)
                 : SongSorter::by_play_count);
 
-        daftarLagu(data);
+        daftarLagu();
         break;
       case 3:
         isDescending = opsiSorting() - 1;
@@ -1580,7 +1579,7 @@ class RAiVFY {
                 ? SongSorter::reverseOrder<Song>(SongSorter::by_title)
                 : SongSorter::by_title);
 
-        daftarLagu(data);
+        daftarLagu();
         break;
       case 0:
         return;
@@ -1668,9 +1667,12 @@ class RAiVFY {
         printBorder(Text::bold(" Search by [Title] "), filtered.size() + 5);
         if (!filtered.empty()) {
           tabelLagu(filtered);
+          waitForInput();
         } else {
-          std::cout << " Lagu dengan judul " << kata_kunci
+          clearScreen();
+          std::cout << "\n Lagu dengan judul " << kata_kunci
                     << " tidak ditemukan!\n";
+          waitForInput();
         }
         break;
       }
@@ -1684,8 +1686,10 @@ class RAiVFY {
         printBorder(Text::bold(" Search by [Artist] "), filtered.size() + 5);
         if (!filtered.empty()) {
           tabelLagu(filtered);
+          waitForInput();
         } else {
-          std::cout << " Lagu dengan artis " << kata_kunci
+          clearScreen();
+          std::cout << "\n Lagu dengan artis " << kata_kunci
                     << " tidak ditemukan!\n";
           waitForInput();
         }
@@ -1701,9 +1705,10 @@ class RAiVFY {
         printBorder(Text::bold(" Search by [Genre] "), filtered.size() + 5);
         if (!filtered.empty()) {
           tabelLagu(filtered);
+          waitForInput();
         } else {
           clearScreen();
-          std::cout << " Lagu dengan genre " << kata_kunci
+          std::cout << "\n Lagu dengan genre " << kata_kunci
                     << " tidak ditemukan!\n";
           waitForInput();
         }
@@ -1714,15 +1719,16 @@ class RAiVFY {
         printBorder(Text::bold(" Show All Songs "), filtered.size() + 5);
         if (!filtered.empty()) {
           tabelLagu(library.database());
+          waitForInput();
         } else {
           clearScreen();
-          std::cout << "Database masih kosong!\n";
+          std::cout << " Database masih kosong!\n";
           waitForInput();
         }
         std::cin.ignore();
         break;
       default:
-        std::cout << "Pilihan menu tidak tersedia!";
+        std::cout << " Pilihan menu tidak tersedia!";
     }
 
     return filtered;
@@ -1815,6 +1821,7 @@ class RAiVFY {
     system(command.data());
   }
 
+  // LOGIN System
   bool login() {
     clearScreen();
     printBorder("Selamat Datang di RAiVFY!", 7);
@@ -1832,10 +1839,10 @@ class RAiVFY {
     return true;
   }
 
+  // Menu Admin
   void menuAdmin() {
     clearScreen();
     printBorder("Hapus Lagu", 10);
-    std::cout << "Size: " << library.database().size();
     std::cout << "\n 1.  Tambah Lagu\n";
     std::cout << " 2.  Hapus Lagu\n";
     std::cout << " 3.  Daftar Lagu\n";
@@ -1857,10 +1864,14 @@ class RAiVFY {
         hapusLagubyAdmin();
         break;
       case DAFTAR:
-        daftarLagu(library.database());
+        daftarLagu();
         break;
       case DELETE_ALL:
+#ifdef __WIN32__
+        system("delete DatabaseLagu.dat");
+#else
         system("rm DatabaseLagu.dat");
+#endif
         library.database().clear();
         break;
       default:
@@ -1868,6 +1879,7 @@ class RAiVFY {
     }
   }
 
+  // Menu tambah  lagu Admin
   void tambahLaguByAdmin() {
     clearScreen();
     printBorder("Tambah Lagu", 12);
@@ -1898,6 +1910,7 @@ class RAiVFY {
     std::cout << "\nLagu berhasil ditambahkan ke database!\n";
   }
 
+  // Menu hapus lagu Admin
   void hapusLagubyAdmin() {
     clearScreen();
     printBorder("Hapus Lagu", library.database().size() + 8);
