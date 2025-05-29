@@ -1,12 +1,10 @@
-#include <algorithm>
 #include <chrono>
-#include <fstream>
+#include <cstring>
 #include <functional>
 #include <iomanip>
 #include <iostream>
 #include <string>
 #include <thread>
-#include <vector>
 
 /**
  * @class Text
@@ -74,6 +72,43 @@ class Text {
 };
 
 /**
+ * @brief Array class
+ *
+ *
+ */
+template <typename T>
+class ArrayList {
+ public:
+  T arr[1000]{};
+
+  ArrayList() { size_ = 0; }
+  size_t size() { return size_; }
+  bool empty() { return size_ == 0; }
+
+  void add(T& new_data) {
+    if (size_ < 1000) {
+      arr[size_] = new_data;
+      ++size_;
+    }
+  }
+
+  void clear() {
+    for (size_t i = 0; i < size_; i++) {
+      arr[i] = T();
+    }
+    size_ = 0;
+  }
+
+  void decreaseSize() {
+    arr[size_ - 1] = T();
+    size_--;
+  }
+
+ private:
+  size_t size_{0};
+};
+
+/**
  * @class Node
  * @brief Struktur Node untuk Implementasi Linked List Ganda.
  *
@@ -120,7 +155,7 @@ class LinkedList {
    *
    * @return const int jumlah node saat ini
    */
-  const int count() const { return node_counter_; }
+  int count() { return node_counter_; }
 
   /**
    * @brief Mengambil pointer ke node kepala atau awal
@@ -316,17 +351,17 @@ class FileManager {
       "DatabasePlaylist.dat"}; /**< Nama file default untuk database playlist */
 
   /**
-   * @brief Menyimpan data bertipe vector ke dalam file biner
+   * @brief Menyimpan data bertipe ArrayList ke dalam file biner
    *
-   * @tparam T Tipe data dalam vector, harus memiliki method serialize() yang
+   * @tparam T Tipe data dalam ArrayList, harus memiliki method serialize() yang
    * mengatur proses penyimpanan file
    * @param filename Nama file tujuan penyimpanan (termasuk ekstensi)
-   * @param data Vector berisi elemen yang ingin disiapkan
+   * @param data ArrayList berisi elemen yang ingin disiapkan
    * @return true jika semua elemen berhasil disimpan
    * @return false jika terjadi error saat penulisan atau serialisasi
    */
   template <typename T>
-  static bool save(const std::string& filename, const std::vector<T>& data) {
+  static bool save(const std::string& filename, ArrayList<T>& data) {
     file_ptr = fopen(filename.c_str(), "wb");
 
     if (!file_ptr) {
@@ -335,7 +370,8 @@ class FileManager {
       return false;
     }
 
-    for (T x : data) {
+    for (size_t i = 0; i < data.size(); i++) {
+      T& x = data.arr[i];
       if (!x.serialize()) {
         fclose(file_ptr);
         return false;
@@ -347,18 +383,18 @@ class FileManager {
   }
 
   /**
-   * @brief Membaca data dari file dan disimpan ke dalam vector
+   * @brief Membaca data dari file dan disimpan ke dalam ArrayList
    *
    * @tparam T Tipe data yang akan dibaca, harus memiliki method deserialize()
    * yang mengatur proses pembacaan file
    * @param filename Nama file sumber data (termasuk ekstensi)
-   * @param data Vector tujuan untuk menyimpan hasil pembacaan
+   * @param data ArrayList tujuan untuk menyimpan hasil pembacaan
    * @return true jika seluruh operasi pembacaan dan deserialisasi berhasil
    * @return false jika terjadi error saat pembacaan atau pembukaan file
    */
   template <typename T>
-  static bool load(const std::string& filename, std::vector<T>& data) {
-    file_ptr = fopen(filename.c_str(), "rb");
+  static bool load(const std::string& filename, ArrayList<T>& data) {
+    FileManager::file_ptr = fopen(filename.c_str(), "rb");
 
     data.clear(); /**< Memastikan vector tujuan dalma keadaan kosong untuk
                      menghindari duplikasi */
@@ -374,10 +410,10 @@ class FileManager {
       if (!x.deserialize()) {
         break;
       }
-      data.emplace_back(x);
+      data.add(x);
     }
 
-    fclose(file_ptr);
+    fclose(FileManager::file_ptr);
     return true;
   }
 
@@ -509,18 +545,22 @@ class FileManager {
 struct Song {
   static size_t id_counter; /**< variabel static untuk auto-increment ID */
   size_t id;                /**< ID yang nilainya berdasarkan id_counter */
-  std::string title;        /**< Judul Lagu */
-  std::string artist;       /**< Nama penyanyi / pencipta lagu */
-  std::string genre;        /**< Genre lagu */
+  char title[255];          /**< Judul Lagu */
+  char artist[255];         /**< Nama penyanyi / pencipta lagu */
+  char genre[255];          /**< Genre lagu */
+  int release_year;         /**< Tahun rilis lagu */
   size_t duration;          /**< Durasi lagu dalam detik */
   size_t play_count;        /**< Jumlah pemutaran lagu */
-  int release_year;         /**< Tahun rilis lagu */
 
   /**
    * @brief Constructor default, mengatur id berdasarkan id_counter
    *
    */
-  Song() : id(id_counter) {}
+  Song() : id(id_counter) {
+    std::strcpy(title, "");
+    std::strcpy(artist, "");
+    std::strcpy(genre, "");
+  }
 
   /**
    * @brief Constructor berparameter untuk membuat Song berdasarkan nilai
@@ -533,16 +573,16 @@ struct Song {
    * @param duration Durasi waktu dalam detik
    * @param play_count jumlah pemutaran awal (opsional, default = 0)
    */
-  Song(const std::string& title, const std::string& artist,
-       const std::string& genre, int release_year, size_t duration,
-       size_t play_count = 0)
+  Song(const char* _title, const char* _artist, const char* _genre,
+       int release_year, size_t duration, size_t play_count = 0)
       : id(id_counter++),
-        title(title),
-        artist(artist),
-        genre(genre),
         release_year(release_year),
         duration(duration),
-        play_count(play_count) {}
+        play_count(play_count) {
+    std::strncpy(title, _title, 254);
+    std::strncpy(artist, _artist, 254);
+    std::strncpy(genre, _genre, 254);
+  }
 
   /**
    * @brief Operator pembanding untuk mengetahui apakah dua lagu sama.
@@ -553,7 +593,10 @@ struct Song {
    * @return true jika kedua lagu memiliki judul dan artis yang sama.
    */
   bool operator==(const Song& rhs) const {
-    return title == rhs.title && artist == rhs.artist;
+    // return std::memcmp(title, rhs.title, sizeof(title) == 0) &&
+    //        memcmp(artist, rhs.artist, sizeof(title) == 0);
+
+    return id == rhs.id;
   }
 
   /**
@@ -573,22 +616,11 @@ struct Song {
    * @return true jika seluruh proses penulisan berhasil.
    */
   bool serialize() const {
-    size_t title_length = title.size();
-    size_t genre_length = genre.size();
-    size_t artist_length = artist.size();
-
-    FileManager::write<size_t>(id);
-    FileManager::write<size_t>(title_length);
-    FileManager::write(title.c_str(), title_length);
-    FileManager::write<size_t>(genre_length);
-    FileManager::write(genre.c_str(), genre_length);
-    FileManager::write<size_t>(artist_length);
-    FileManager::write(artist.c_str(), artist_length);
-    FileManager::write<int>(release_year);
-    FileManager::write<size_t>(duration);
-    FileManager::write<size_t>(play_count);
-
-    return true;
+    return FileManager::write<size_t>(id) && FileManager::write(title, 255) &&
+           FileManager::write(genre, 255) && FileManager::write(artist, 255) &&
+           FileManager::write<int>(release_year) &&
+           FileManager::write<size_t>(duration) &&
+           FileManager::write<size_t>(play_count);
   }
 
   /**
@@ -601,28 +633,17 @@ struct Song {
    * @return true jika seluruh proses pembacaan berhasil.
    */
   bool deserialize() {
-    size_t title_length{0}, genre_length{0}, artist_length{0};
+    if (!FileManager::read<size_t>(id)) return false;
 
-    if (!FileManager::read(id)) return false;
+    if (!FileManager::read(&title[0], 255)) return false;
+    if (!FileManager::read(&genre[0], 255)) return false;
+    if (!FileManager::read(&artist[0], 255)) return false;
 
-    if (!FileManager::read(title_length)) return false;
-    title.resize(title_length);
-    if (title_length > 0 && !FileManager::read(&title[0], title_length))
-      return false;
+    title[254] = genre[254] = artist[254] = '\0';
 
-    if (!FileManager::read(genre_length)) return false;
-    genre.resize(genre_length);
-    if (genre_length > 0 && !FileManager::read(&genre[0], genre_length))
-      return false;
-
-    if (!FileManager::read(artist_length)) return false;
-    artist.resize(artist_length);
-    if (artist_length > 0 && !FileManager::read(&artist[0], artist_length))
-      return false;
-
-    if (!FileManager::read(release_year)) return false;
-    if (!FileManager::read(duration)) return false;
-    if (!FileManager::read(play_count)) return false;
+    if (!FileManager::read<int>(release_year)) return false;
+    if (!FileManager::read<size_t>(duration)) return false;
+    if (!FileManager::read<size_t>(play_count)) return false;
 
     Song::id_counter++;
     return true;
@@ -646,14 +667,16 @@ class SongSorter {
    * secara fleksibel untuk mengurutkan data berdasrkan field tertentu
    */
   static inline auto by_title = [](const Song& a, const Song& b) {
-    return a.title <= b.title;
+    return std::strcmp(a.title, b.title) <= 0;
   };
 
   /**
    * @brief Comparator untuk mengurutkan berdasarkan ID lagu (ascending).
    */
   static inline auto by_id = [](const Song& a, const Song& b) {
-    return a.id <= b.id;
+    if (a.id == 0) return false;
+    if (b.id == 0) return true;
+    return a.id < b.id;
   };
 
   /**
@@ -661,7 +684,7 @@ class SongSorter {
    * (ascending).
    */
   static inline auto by_play_count = [](const Song& a, const Song& b) {
-    return a.play_count <= b.play_count;
+    return a.play_count < b.play_count;
   };
 
   /**
@@ -669,16 +692,16 @@ class SongSorter {
    * (ascending).
    */
   static inline auto by_release_year = [](const Song& a, const Song& b) {
-    return a.release_year <= b.release_year;
+    return a.release_year < b.release_year;
   };
 
   /**
-   * @brief Memastikan vektor Song telah terurut berdasarkan ID.
+   * @brief Memastikan ArrayList Song telah terurut berdasarkan ID.
    *
    * Memilih algoritma quickSort untuk data > 30 elemen, bubbleSort jika ≤ 30.
-   * @param data Vektor lagu yang akan diurutkan.
+   * @param data ArrayList lagu yang akan diurutkan.
    */
-  static void ensureSortedByID(std::vector<Song>& data) {
+  static void ensureSortedByID(ArrayList<Song>& data) {
     if (data.size() > kQuickSortThreshold) {
       quickSort(data, 0, data.size() - 1, by_id);
     } else {
@@ -689,36 +712,41 @@ class SongSorter {
   /**
    * @brief Mengurutkan data menggunakan Bubble Sort.
    *
-   * @param data Vektor data lagu.
+   * @param data ArrayList data lagu.
    * @param comparator Fungsi pembanding untuk menentukan urutan.
    */
   static void bubbleSort(
-      std::vector<Song>& data,
+      ArrayList<Song>& data,
       std::function<bool(const Song&, const Song&)> comparator) {
     if (data.empty()) return;
 
-    for (size_t i = 0; i < data.size(); ++i) {
+    for (size_t i = 0; i < data.size() - 1; ++i) {
+      bool swapped = false;
+
       for (size_t j = 0; j < data.size() - i - 1; ++j) {
-        if (comparator(data[j + 1], data[j])) {
-          swap(&data[j], &data[j + 1]);
+        if (comparator(data.arr[j + 1], data.arr[j])) {
+          swap(&data.arr[j], &data.arr[j + 1]);
+          swapped = true;
         }
       }
+
+      if (!swapped) break;
     }
   }
 
   /**
    * @brief Mengurutkan data menggunakan Quick Sort.
    *
-   * @param data Vektor data lagu.
+   * @param data ArrayList data lagu.
    * @param awal Indeks awal.
    * @param akhir Indeks akhir.
    * @param comparator Fungsi pembanding untuk menentukan urutan.
    */
   static void quickSort(
-      std::vector<Song>& data, size_t awal, size_t akhir,
+      ArrayList<Song>& data, size_t awal, size_t akhir,
       std::function<bool(const Song&, const Song&)> comparator) {
     if (awal < akhir) {
-      int pivot = partition(data, awal, akhir, comparator);
+      size_t pivot = partition(data, awal, akhir, comparator);
       if (pivot > awal) quickSort(data, awal, pivot - 1, comparator);
       if (pivot < akhir) quickSort(data, pivot + 1, akhir, comparator);
     }
@@ -742,26 +770,26 @@ class SongSorter {
   /**
    * @brief Fungsi partisi pada algoritma quickSort.
    *
-   * @param data Vektor lagu.
+   * @param data ArrayList lagu.
    * @param index_awal Indeks awal.
    * @param index_akhir Indeks akhir.
    * @param comparator Comparator untuk sorting.
    * @return Indeks pivot setelah partisi.
    */
   static size_t partition(
-      std::vector<Song>& data, size_t index_awal, size_t index_akhir,
+      ArrayList<Song>& data, size_t index_awal, size_t index_akhir,
       std::function<bool(const Song&, const Song&)> comparator) {
-    Song pivot = data[index_akhir];
-    size_t i = index_awal - 1;
+    Song pivot = data.arr[index_akhir];
+    size_t i = index_awal;
 
     for (size_t j = index_awal; j < index_akhir; j++) {
-      if (comparator(data[j], pivot)) {
+      if (comparator(data.arr[j], pivot)) {
         i++;
-        swap(&data[j], &data[i]);
+        swap(&data.arr[j], &data.arr[i]);
       }
     }
 
-    swap(&data[i + 1], &data[index_akhir]);
+    swap(&data.arr[i + 1], &data.arr[index_akhir]);
 
     return (i + 1);
   }
@@ -796,10 +824,10 @@ class SongSearcher {
    * Akan mengurutkan data terlebih dahulu jika belum terurut.
    *
    * @param target_id ID lagu yang dicari.
-   * @param data Vektor lagu.
+   * @param data ArrayList lagu.
    * @return true jika ditemukan, false jika tidak.
    */
-  static bool binarySearch(size_t target_id, std::vector<Song>& data) {
+  static bool binarySearch(size_t target_id, ArrayList<Song>& data) {
     if (data.empty()) return false;
 
     SongSorter::ensureSortedByID(data);
@@ -808,14 +836,14 @@ class SongSearcher {
     while (start <= end) {
       mid = (start + end) / 2;
 
-      if (target_id == data[mid].id) {
+      if (target_id == data.arr[mid].id) {
         result_index = mid;
         return true;
       }
 
-      if (target_id > data[mid].id) {
+      if (target_id > data.arr[mid].id) {
         start = mid + 1;
-      } else if (target_id < data[mid].id) {
+      } else if (target_id < data.arr[mid].id) {
         end = mid - 1;
       }
     }
@@ -827,16 +855,18 @@ class SongSearcher {
    * @brief Mencari lagu berdasarkan genre (case-insensitive & substring).
    *
    * @param genre Genre yang dicari.
-   * @param data Vektor lagu.
-   * @return Vektor lagu yang cocok.
+   * @param data ArrayList lagu.
+   * @return ArrayList lagu yang cocok.
    */
-  static std::vector<Song> searchByGenre(const std::string& genre,
-                                         const std::vector<Song>& data) {
-    std::string normalized_genre = normalizeString(genre);
+  static ArrayList<Song> searchByGenre(const std::string& genre,
+                                       ArrayList<Song>& data) {
+    char normalized_genre[255];
+    std::strncpy(normalized_genre, normalizeString(genre).c_str(), 254);
 
     return linearSearch(data, [normalized_genre](const Song& song) {
-      std::string song_genre = normalizeString(song.genre);
-      return song_genre.find(normalized_genre) != std::string::npos;
+      char song_genre[255];
+      std::strncpy(song_genre, normalizeString(song.genre).c_str(), 254);
+      return std::strcmp(song_genre, normalized_genre) != 0 ? false : true;
     });
   }
 
@@ -844,16 +874,18 @@ class SongSearcher {
    * @brief Mencari lagu berdasarkan artis (case-insensitive & substring).
    *
    * @param artist Nama artis.
-   * @param data Vektor lagu.
-   * @return Vektor lagu yang cocok.
+   * @param data ArrayList lagu.
+   * @return ArrayList lagu yang cocok.
    */
-  static std::vector<Song> searchByArtist(const std::string& artist,
-                                          const std::vector<Song>& data) {
-    std::string normalized_artist = normalizeString(artist);
+  static ArrayList<Song> searchByArtist(const std::string& artist,
+                                        ArrayList<Song>& data) {
+    char normalized_artist[255];
+    std::strncpy(normalized_artist, normalizeString(artist).c_str(), 254);
 
     return linearSearch(data, [normalized_artist](const Song& song) {
-      std::string song_artist = normalizeString(song.artist);
-      return song_artist.find(normalized_artist) != std::string::npos;
+      char song_artist[255];
+      std::strncpy(song_artist, normalizeString(song.artist).c_str(), 254);
+      return std::strcmp(song_artist, normalized_artist) != 0 ? false : true;
     });
   }
 
@@ -861,16 +893,18 @@ class SongSearcher {
    * @brief Mencari lagu berdasarkan judul (case-insensitive & substring).
    *
    * @param title Judul lagu.
-   * @param data Vektor lagu.
-   * @return Vektor lagu yang cocok.
+   * @param data ArrayList lagu.
+   * @return ArrayList lagu yang cocok.
    */
-  static std::vector<Song> searchByTitle(const std::string& title,
-                                         const std::vector<Song>& data) {
-    std::string normalized_title = normalizeString(title);
+  static ArrayList<Song> searchByTitle(const std::string& title,
+                                       ArrayList<Song>& data) {
+    char normalized_title[255];
+    std::strncpy(normalized_title, normalizeString(title).c_str(), 254);
 
     return linearSearch(data, [normalized_title](const Song& song) {
-      std::string song_title = normalizeString(song.title);
-      return song_title.find(normalized_title) != std::string::npos;
+      char song_title[255];
+      std::strncpy(song_title, normalizeString(song.title).c_str(), 254);
+      return std::strcmp(song_title, normalized_title) != 0 ? false : true;
     });
   }
 
@@ -878,18 +912,17 @@ class SongSearcher {
   /**
    * @brief Implementasi pencarian linear (filter) berdasarkan comparator.
    *
-   * @param data Vektor lagu.
+   * @param data ArrayList lagu.
    * @param comparator Fungsi yang menentukan apakah lagu cocok.
-   * @return Vektor lagu yang memenuhi kondisi comparator.
+   * @return ArrayList lagu yang memenuhi kondisi comparator.
    */
-  static std::vector<Song> linearSearch(
-      const std::vector<Song>& data,
-      std::function<bool(const Song&)> comparator) {
+  static ArrayList<Song> linearSearch(
+      ArrayList<Song>& data, std::function<bool(const Song&)> comparator) {
     size_t index{0};
-    std::vector<Song> filtered_library;
+    ArrayList<Song> filtered_library;
     while (index < data.size()) {
-      if (comparator(data[index])) {
-        filtered_library.emplace_back(data[index]);
+      if (comparator(data.arr[index])) {
+        filtered_library.add(data.arr[index]);
       }
       index++;
     }
@@ -920,18 +953,18 @@ class SongLibrary {
   /**
    * @brief Mengambil data lagu yang ada di database
    *
-   * @return std::vector<Song>& Vector berisi lagu dalam database
+   * @return ArrayList<Song>& Vector berisi lagu dalam database
    */
-  std::vector<Song>& database() { return database_; }
+  ArrayList<Song>& database() { return database_; }
 
   /**
    * @brief Menambahkan lagu ke dalam database
    *
    * @param song Data yang akan ditambahkan
    */
-  void addToLibrary(const Song& song) {
+  void addToLibrary(Song song) {
     if (!SongSearcher::binarySearch(song.id, database_)) {
-      database_.push_back(song);
+      database_.add(song);
     }
 
     SongSorter::ensureSortedByID(database_);
@@ -942,13 +975,17 @@ class SongLibrary {
    *
    * @param target_id ID lagu yang akan dihapus
    */
-  void removeSongById(int target_id) {
+  void removeSongById(size_t target_id) {
     if (SongSearcher::binarySearch(target_id, database_)) {
-      database_.erase(std::remove_if(database_.begin(), database_.end(),
-                                     [target_id](const Song& song) {
-                                       return song.id == target_id;
-                                     }),
-                      database_.end());
+      for (size_t i = 0; i < database_.size() - 1; i++) {
+        if (database_.arr[i].id == target_id) {
+          for (size_t j = i; j < database_.size() - 1; j++) {
+            database_.arr[j] = database_.arr[j + 1];
+          }
+          database_.decreaseSize();
+          break;
+        }
+      }
     }
   }
 
@@ -962,12 +999,12 @@ class SongLibrary {
     if (SongSearcher::binarySearch(target_id, database_)) {
       int result = SongSearcher::result_index;
       SongSearcher::result_index = -1;
-      return database_[result];
+      return database_.arr[result];
     }
   }
 
  private:
-  std::vector<Song>
+  ArrayList<Song>
       database_; /**< Vector berisi seluruh lagu yang ada (database) */
 };
 
@@ -997,21 +1034,23 @@ class Playlist {
    *
    * @param name Nama dari playlist
    */
-  Playlist(std::string name) : name_(name), id_(id_counter) {}
+  Playlist(std::string name) : id_(id_counter) {
+    std::strcpy(name_, name.c_str());
+  }
 
   /**
    * @brief Mengambil data ID dari playlist
    *
    * @return const size_t ID unik playlist
    */
-  const size_t id() { return id_; }
+  size_t id() const { return id_; }
 
   /**
    * @brief Mengambil nama playlist
    *
    * @return const std::string& Nama playlist
    */
-  const std::string& name() { return name_; }
+  std::string name() { return std::string(name_); }
 
   /**
    * @brief Mengambil daftar lagu dalam playlist
@@ -1044,14 +1083,7 @@ class Playlist {
    *
    * @return true jika playlist berhasil disimpan
    */
-  bool serialize() const {
-    size_t name_length = name_.size();
-
-    FileManager::write<size_t>(name_length);
-    FileManager::write(name_.c_str(), name_length);
-
-    return true;
-  }
+  bool serialize() const { return FileManager::write(name_, 255); }
 
   /**
    * @brief Operasi pembacaan atribut playlist dari file
@@ -1060,12 +1092,8 @@ class Playlist {
    * @return false jika terjadi kegagalan dalam pembacaan file
    */
   bool deserialize() {
-    size_t name_length{0};
-    if (!FileManager::read(name_length)) return false;
-
-    name_.resize(name_length);
-    if (name_length > 0 && !FileManager::read(&name_[0], name_length))
-      return false;
+    if (!FileManager::read(&name_[0], 255)) return false;
+    name_[254] = '\0';
 
     Playlist::id_counter++;
     return true;
@@ -1094,8 +1122,8 @@ class Playlist {
 
     while (x != nullptr) {
       std::cout << std::left << std::setw(5) << x->data.id << std::setw(18)
-                << x->data.title.substr(0, 17) << std::setw(18)
-                << x->data.artist.substr(0, 17) << std::setw(8)
+                << std::string(x->data.title).substr(0, 17) << std::setw(18)
+                << std::string(x->data.artist).substr(0, 17) << std::setw(8)
                 << x->data.release_year << std::setw(8) << x->data.duration
                 << std::setw(15) << x->data.play_count << "\n";
       x = x->next;
@@ -1112,7 +1140,7 @@ class Playlist {
 
     while (current_song_) {
       int remaining = current_song_->data.duration / 10;
-      std::string title = current_song_->data.title + "         ";
+      std::string title = std::strcat(current_song_->data.title, "        ");
       size_t move_print = 0;
 
       int tick{0};
@@ -1149,8 +1177,8 @@ class Playlist {
   }
 
  private:
+  char name_[255];           /**< Nama playlist */
   size_t id_;                /**< ID unik dari playlist */
-  std::string name_;         /**< Nama playlist */
   LinkedList<Song> list_;    /**< Daftar lagu dalam bentuk LinkedList */
   Node<Song>* current_song_; /**< Pointer ke lagu yang sedang diputar */
 
@@ -1188,7 +1216,7 @@ class RAiVFY {
    * Setelah itu, program menampilkan menu utama.
    */
   void ignite() {
-    int index = 0;
+    size_t index = 0;
     isLogin = isAdmin = isPlaying = false;
     bool display = false;
 
@@ -1208,12 +1236,12 @@ class RAiVFY {
         display = true;
 
         while (index < playlist_library.size() - 1 &&
-               playlist_library[index].list().isEmpty()) {
+               playlist_library.arr[index].list().isEmpty()) {
           index++;
         }
 
-        std::thread playback(&Playlist::playbackLoop, &playlist_library[index],
-                             std::ref(display));
+        std::thread playback(&Playlist::playbackLoop,
+                             &playlist_library.arr[index], std::ref(display));
         playback.detach();
         isPlaying = true;
       }
@@ -1231,14 +1259,15 @@ class RAiVFY {
     FileManager::load<Song>(FileManager::kDatabase, library.database());
     FileManager::load<Playlist>(FileManager::kPlaylist, playlist_library);
 
-    for (auto& p : playlist_library) {
-      FileManager::load<Song>(p.name() + ".dat", p.list());
+    for (size_t i = 0; i < playlist_library.size(); i++) {
+      FileManager::load<Song>(playlist_library.arr[i].name() + ".dat",
+                              playlist_library.arr[i].list());
     }
   }
 
  private:
   SongLibrary library; /**< Objek untuk mengatur seluruh operasi database */
-  std::vector<Playlist>
+  ArrayList<Playlist>
       playlist_library; /** Koleksi playlist yang dimiliki user */
   bool isAdmin,
       isLogin;    /**< Menentukan user login atau belum & admin atau bukan */
@@ -1310,8 +1339,8 @@ class RAiVFY {
     std::getline(std::cin >> std::ws, namaPlaylist);
     bool isValid = true;
 
-    for (auto& p : playlist_library) {
-      if (p.name() == namaPlaylist) {
+    for (size_t i = 0; i < playlist_library.size(); i++) {
+      if (playlist_library.arr[i].name() == namaPlaylist) {
         isValid = false;
       }
     }
@@ -1321,7 +1350,7 @@ class RAiVFY {
                 << "] sudah ada!\n";
     } else {
       Playlist new_playlist(namaPlaylist);
-      playlist_library.emplace_back(new_playlist);
+      playlist_library.add(new_playlist);
       FileManager::save(FileManager::kPlaylist, playlist_library);
       FileManager::save(namaPlaylist + ".dat", new_playlist.list());
 
@@ -1343,7 +1372,8 @@ class RAiVFY {
     printBorder(Text::bold(" Buat Playlist "), playlist_library.size() + 7);
 
     std::cout << "\n";
-    for (auto& playlist : playlist_library) {
+    for (size_t i = 0; i < playlist_library.size(); i++) {
+      Playlist& playlist = playlist_library.arr[i];
       std::cout << " " << playlist.id() << ". " << std::left << std::setw(15)
                 << playlist.name().substr(0, 14) << "("
                 << playlist.list().count() << " songs)"
@@ -1351,7 +1381,7 @@ class RAiVFY {
     }
     std::cout << "\n 0. Kembali ke Main Menu\n";
 
-    int choice = getNumberInput<int>(Text::bold("\n > Pilih Menu: "));
+    size_t choice = getNumberInput<size_t>(Text::bold("\n > Pilih Menu: "));
 
     if (choice <= 0 || choice > playlist_library.size()) {
       if (choice != 0) std::cout << " Tidak ada playlist yang sesuai!\n";
@@ -1376,16 +1406,17 @@ class RAiVFY {
     }
 
     printBorder(
-        " Playlist [" + Text::bold(playlist_library[index].name()) + "] ", 12);
+        " Playlist [" + Text::bold(playlist_library.arr[index].name()) + "] ",
+        11);
     std::cout << "\n" << Text::underline(" Pilihan Menu:\n");
     std::cout << " 1. Lihat isi playlist\n";
     std::cout << " 2. Tambah lagu ke playlist\n";
-    std::cout << " 3. Reverse playlist\n";
-    std::cout << " 4. Hapus lagu dari playlist\n";
-    std::cout << " 5. Hapus playlist\n";
+    std::cout << " 3. Hapus lagu dari playlist\n";
+    std::cout << " 4. Hapus playlist\n";
+    std::cout << " 5. Reverse playlist\n";
     std::cout << " 0. Kembali ke menu utama\n\n";
 
-    enum action { KEMBALI, LIHAT, TAMBAH, REVERSE, HAPUS_LAGU, HAPUS_PLAYLIST };
+    enum action { KEMBALI, LIHAT, TAMBAH, HAPUS_LAGU, HAPUS_PLAYLIST, REVERSE };
 
     int choice = getNumberInput<int>(" > Pilih menu: ");
     switch (choice) {
@@ -1395,12 +1426,12 @@ class RAiVFY {
       case LIHAT: {
         clearScreen();
 
-        printBorder(
-            " Playlist [" + Text::bold(playlist_library[index].name()) + "] ",
-            playlist_library[index].list().count() + 3);
+        printBorder(" Playlist [" +
+                        Text::bold(playlist_library.arr[index].name()) + "] ",
+                    playlist_library.arr[index].list().count() + 3);
 
-        if (!playlist_library[index].list().isEmpty()) {
-          playlist_library[index].displayList();
+        if (!playlist_library.arr[index].list().isEmpty()) {
+          playlist_library.arr[index].displayList();
         } else {
           std::cout << " Playlist masih kosong!\n";
         }
@@ -1411,26 +1442,26 @@ class RAiVFY {
       }
       case TAMBAH: {
         isPlaying = true;
-        std::vector<Song> filtered = searchingLagu();
+        ArrayList<Song> filtered = searchingLagu();
 
         size_t selected_id = getNumberInput<size_t>(" Masukan ID lagu : ");
         if (SongSearcher::binarySearch(selected_id, filtered)) {
-          playlist_library[index].addSong(
-              filtered.at(SongSearcher::result_index));
+          playlist_library.arr[index].addSong(
+              filtered.arr[SongSearcher::result_index]);
         }
 
-        FileManager::save(playlist_library[index].name() + ".dat",
-                          playlist_library[index].list());
+        FileManager::save(playlist_library.arr[index].name() + ".dat",
+                          playlist_library.arr[index].list());
 
-        playlist_library[index].list().clear();
-        FileManager::load(playlist_library[index].name() + ".dat",
-                          playlist_library[index].list());
+        playlist_library.arr[index].list().clear();
+        FileManager::load(playlist_library.arr[index].name() + ".dat",
+                          playlist_library.arr[index].list());
         break;
       }
       case REVERSE: {
-        playlist_library[index].list().reverse();
-        if (!playlist_library[index].list().isEmpty()) {
-          playlist_library[index].displayList();
+        playlist_library.arr[index].list().reverse();
+        if (!playlist_library.arr[index].list().isEmpty()) {
+          playlist_library.arr[index].displayList();
         } else {
           std::cout << "\n Playlist masih kosong!\n";
         }
@@ -1440,37 +1471,42 @@ class RAiVFY {
         break;
       }
       case HAPUS_LAGU: {
-        if (playlist_library[index].list().isEmpty()) {
+        if (playlist_library.arr[index].list().isEmpty()) {
           std::cout << "\n Playlist masih kosong!\n";
           std::cin.ignore();
           waitForInput();
           break;
         }
 
-        playlist_library[index].displayList();
+        playlist_library.arr[index].displayList();
 
         size_t selected_id = getNumberInput<size_t>(" Masukan ID lagu : ");
         if (SongSearcher::binarySearch(selected_id, library.database())) {
-          playlist_library[index].removeSong(
-              library.database().at(SongSearcher::result_index));
+          playlist_library.arr[index].removeSong(
+              library.database().arr[SongSearcher::result_index]);
         }
 
-        FileManager::save(playlist_library[index].name() + ".dat",
-                          playlist_library[index].list());
+        FileManager::save(playlist_library.arr[index].name() + ".dat",
+                          playlist_library.arr[index].list());
 
-        playlist_library[index].list().clear();
-        FileManager::load(playlist_library[index].name() + ".dat",
-                          playlist_library[index].list());
+        playlist_library.arr[index].list().clear();
+        FileManager::load(playlist_library.arr[index].name() + ".dat",
+                          playlist_library.arr[index].list());
         break;
       }
       case HAPUS_PLAYLIST: {
         deleteFilePlaylist(index);
 
-        int target = playlist_library[index].id();
-        playlist_library.erase(
-            std::remove_if(playlist_library.begin(), playlist_library.end(),
-                           [&target](Playlist& p) { return p.id() == target; }),
-            playlist_library.end());
+        size_t target = playlist_library.arr[index].id();
+
+        for (size_t i = 0; i < playlist_library.size(); i++) {
+          if (playlist_library.arr[i].id() == target) {
+            for (size_t j = i; j < playlist_library.size(); j++) {
+              playlist_library.arr[j] = playlist_library.arr[j + 1];
+            }
+            playlist_library.decreaseSize();
+          }
+        }
 
         FileManager::save(FileManager::kPlaylist, playlist_library);
 
@@ -1488,9 +1524,9 @@ class RAiVFY {
   /**
    * @brief Menampilkan daftar lagu dalam bentuk tabel.
    *
-   * @param data Vektor berisi lagu-lagu yang ingin ditampilkan.
+   * @param data ArrayList berisi lagu-lagu yang ingin ditampilkan.
    */
-  void daftarLagu(std::vector<Song>& data) {
+  void daftarLagu(ArrayList<Song>& data) {
     clearScreen();
 
     printBorder(Text::bold(" Daftar Lagu "), data.size() + 3);
@@ -1553,7 +1589,6 @@ class RAiVFY {
         std::cout << " Pilihan menu tidak tersedia!\n";
         break;
     }
-    clearScreen();
   }
 
   /**
@@ -1561,29 +1596,29 @@ class RAiVFY {
    *
    * @param data
    */
-  void tabelLagu(std::vector<Song>& data, bool display_id = true) {
+  void tabelLagu(ArrayList<Song>& data, bool display_id = true) {
     clearScreen();
     std::cout << "\n\n"
               << std::setfill('-') << std::setw(61) << "-" << std::setfill(' ')
               << "\n";
     std::cout << std::left << std::setw(5 + Text::kAnsi) << Text::bold("No")
               << std::setw(18 + Text::kAnsi) << Text::bold("Judul")
-              << std::setw(18 + Text::kAnsi) << Text::bold("Artis")
-              << std::setw(5 + Text::kAnsi) << Text::bold("ID")
-              << std::setw(8 + Text::kAnsi) << Text::bold("Tahun")
+              << std::setw(18 + Text::kAnsi) << Text::bold("Artis");
+    if (display_id) std::cout << std::setw(5 + Text::kAnsi) << Text::bold("ID");
+    std::cout << std::setw(8 + Text::kAnsi) << Text::bold("Tahun")
               << std::setw(8 + Text::kAnsi) << Text::bold("Durasi")
               << std::setw(15 + Text::kAnsi) << Text::bold("Diputar") << "\n";
     std::cout << std::setfill('-') << std::setw(61) << "-" << std::setfill(' ')
               << "\n";
 
-    int index = 1;
-    for (auto& song : data) {
-      std::cout << std::left << std::setw(5) << index << std::setw(18)
-                << song.title.substr(0, 17) << std::setw(18)
-                << song.artist.substr(0, 17) << std::setw(5) << song.id
-                << std::setw(8) << song.release_year << std::setw(8)
+    for (size_t index = 0; index < data.size(); index++) {
+      auto& song = data.arr[index];
+      std::cout << std::left << std::setw(5) << index + 1 << std::setw(18)
+                << std::string(song.title).substr(0, 17) << std::setw(18)
+                << std::string(song.artist).substr(0, 17);
+      if (display_id) std::cout << std::setw(5) << song.id;
+      std::cout << std::setw(8) << song.release_year << std::setw(8)
                 << song.duration << std::setw(12) << song.play_count << "\n";
-      index++;
     }
 
     std::cout << "\n\n";
@@ -1606,9 +1641,9 @@ class RAiVFY {
   /**
    * @brief Menampilkan menu pencarian lagu
    *
-   * @return std::vector<Song> Vektor berisi lagu hasil pencarian
+   * @return ArrayList<Song> ArrayList berisi lagu hasil pencarian
    */
-  std::vector<Song> searchingLagu() {
+  ArrayList<Song> searchingLagu() {
     clearScreen();
     SongSearcher::result_index = -1;
     printBorder(Text::bold(" Search Lagu "), 11);
@@ -1620,7 +1655,7 @@ class RAiVFY {
 
     int choice = getNumberInput<int>(Text::bold(" > Pilih metode : ")) - 1;
     enum search { JUDUL, ARTIST, GENRE, ALL };
-    std::vector<Song> filtered;
+    ArrayList<Song> filtered;
     switch (choice) {
       case JUDUL: {
         std::cout << " Masukkan judul: ";
@@ -1773,20 +1808,18 @@ class RAiVFY {
   void deleteFilePlaylist(int index) {
     std::string command;
 #ifdef __WIN32__
-    command = "delete '" + playlist_library[index].name() + ".dat'";
+    command = "delete '" + playlist_library.arr[index].name() + ".dat'";
 #else
-    command = "rm '" + playlist_library[index].name() + ".dat'";
+    command = "rm '" + playlist_library.arr[index].name() + ".dat'";
 #endif
     system(command.data());
   }
 
   bool login() {
     clearScreen();
-    std::cout << "\n===================================================\n";
-    std::cout << "            SELAMAT DATANG DI RAiVFY!              \n";
-    std::cout << "===================================================\n";
+    printBorder("Selamat Datang di RAiVFY!", 7);
     std::string username;
-    std::cout << "\nSilahkan masuk dengan username Anda!\n\n";
+    std::cout << "\nSilahkan masuk dengan username Anda!\n";
     std::cout << Text::bold("Username: ");
 
     if (std::cin.peek() == '\n') std::cin.ignore();
@@ -1801,17 +1834,16 @@ class RAiVFY {
 
   void menuAdmin() {
     clearScreen();
-    std::cout << "=====================================\n";
-    std::cout << "              HI ADMIN!              \n";
-    std::cout << "=====================================\n";
-    std::cout << " 1.  Tambah Lagu\n";
+    printBorder("Hapus Lagu", 10);
+    std::cout << "Size: " << library.database().size();
+    std::cout << "\n 1.  Tambah Lagu\n";
     std::cout << " 2.  Hapus Lagu\n";
     std::cout << " 3.  Daftar Lagu\n";
-    std::cout << " 0.  Keluar\n";
-    std::cout << "-------------------------------------\n";
+    std::cout << " 4.  Hapus Database\n";
+    std::cout << " 0.  Keluar\n\n";
 
     int choice = getNumberInput<int>(" Pilihan Menu : ");
-    enum mainMenu { KELUAR, TAMBAH, HAPUS, DAFTAR };
+    enum mainMenu { KELUAR, TAMBAH, HAPUS, DAFTAR, DELETE_ALL };
     switch (choice) {
       case KELUAR:
         isAdmin = false;
@@ -1827,6 +1859,10 @@ class RAiVFY {
       case DAFTAR:
         daftarLagu(library.database());
         break;
+      case DELETE_ALL:
+        system("rm DatabaseLagu.dat");
+        library.database().clear();
+        break;
       default:
         std::cout << "Menu tidak tersedia!\n";
     }
@@ -1834,29 +1870,27 @@ class RAiVFY {
 
   void tambahLaguByAdmin() {
     clearScreen();
-    std::cout << "\n=====================================\n";
-    std::cout << "           TAMBAH LAGU BARU          \n";
-    std::cout << "=====================================\n";
+    printBorder("Tambah Lagu", 12);
 
-    std::string judul, artis, genre;
+    char judul[255], artis[255], genre[255];
     int tahun, diputar, durasi;
 
     std::cout << "\n Masukkan detail lagu di bawah ini:\n";
-    std::cout << "-------------------------------------\n";
 
-    std::cout << Text::bold("Judul Lagu   : ");
-    std::getline(std::cin >> std::ws, judul);
+    std::cout << Text::bold(" Judul Lagu\t: ");
+    std::cin.ignore();
+    std::cin.getline(judul, 254);
 
-    std::cout << Text::bold("Nama Artis   : ");
-    std::getline(std::cin >> std::ws, artis);
+    std::cout << Text::bold(" Nama Artis\t: ");
+    std::cin.getline(artis, 254);
 
-    std::cout << Text::bold("Genre        : ");
-    std::getline(std::cin >> std::ws, genre);
+    std::cout << Text::bold(" Genre\t\t: ");
+    std::cin.getline(genre, 254);
 
-    tahun = getNumberInput<int>(Text::bold("Tahun Rilis  : "));
-    durasi = getNumberInput<int>(Text::bold("Durasi dalam detik  : "));
+    tahun = getNumberInput<int>(Text::bold(" Tahun Rilis\t: "));
+    durasi = getNumberInput<int>(Text::bold(" Durasi (detik)\t: "));
 
-    diputar = getNumberInput<int>(Text::bold("Diputar Sebanyak  : "));
+    diputar = getNumberInput<int>(Text::bold(" Play Count\t: "));
 
     library.addToLibrary(Song(judul, artis, genre, tahun, durasi, diputar));
     FileManager::save(FileManager::kDatabase, library.database());
@@ -1866,17 +1900,20 @@ class RAiVFY {
 
   void hapusLagubyAdmin() {
     clearScreen();
-    std::cout << "\n=====================================\n";
-    std::cout << "            HAPUS LAGU              \n";
-    std::cout << "=====================================\n";
+    printBorder("Hapus Lagu", library.database().size() + 8);
+    if (library.database().empty()) {
+      std::cout << "Database masih kosong!\n";
+      std::cin.ignore();
+      waitForInput();
+      return;
+    }
 
     tabelLagu(library.database());
-    int idLagu = getNumberInput<int>("\nMasukkan ID lagu yang ingin dihapus: ");
+    size_t idLagu =
+        getNumberInput<size_t>("\nMasukkan ID lagu yang ingin dihapus: ");
 
-    library.database().erase(
-        std::remove_if(library.database().begin(), library.database().end(),
-                       [&idLagu](Song& p) { return p.id == idLagu; }),
-        library.database().end());
+    library.removeSongById(idLagu);
+
     Song::id_counter = 1;
 
     FileManager::save(FileManager::kDatabase, library.database());
