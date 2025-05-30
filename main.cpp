@@ -6,6 +6,7 @@
 #include <string>
 #include <thread>
 
+#pragma region Utility:TextStyling
 /**
  * @class Text
  * @brief Kelas untuk memformat teks pada terminal menggunakan ANSI (American
@@ -70,7 +71,10 @@ class Text {
     std::cout << "\033[" << line << ";" << column << "H";
   }
 };
+#pragma endregion
 
+#pragma region StrukturData
+#pragma region Custom Vector-Like
 /**
  * @brief Array class
  *
@@ -107,7 +111,8 @@ class ArrayList {
  private:
   size_t size_{0};
 };
-
+#pragma endregion
+#pragma region LinkedList Ganda
 /**
  * @class Node
  * @brief Struktur Node untuk Implementasi Linked List Ganda.
@@ -335,7 +340,9 @@ class LinkedList {
   bool isNull(Node<T>* node) { return !node; }
   bool isNotNull(Node<T>* node) { return node; }
 };
+#pragma endregion
 
+#pragma region FileHandling
 /**
  * @class FileManager
  * @brief Kelas berisi static method untuk melakukan operasi penyimpanan dan
@@ -532,7 +539,10 @@ class FileManager {
   static inline FILE* file_ptr{
       nullptr}; /**< Pointer file global yang digunakan untuk seluruh operasi */
 };
+#pragma endregion
 
+#pragma region Song-Specified
+#pragma region Song Data Structure
 /**
  * @class Song
  * @brief Struct Song merepresentasikan satu entitas lagu dalam sistem.
@@ -649,7 +659,9 @@ struct Song {
     return true;
   }
 };
+#pragma endregion
 
+#pragma region Sorting Algorithm Implementation
 /**
  * @class SongSorter
  * @brief Implementasi algoritma sorting (pengurutan) untuk objek Song.
@@ -674,8 +686,6 @@ class SongSorter {
    * @brief Comparator untuk mengurutkan berdasarkan ID lagu (ascending).
    */
   static inline auto by_id = [](const Song& a, const Song& b) {
-    // if (a.id == 0) return false;
-    // if (b.id == 0) return true;
     return a.id < b.id;
   };
 
@@ -684,8 +694,6 @@ class SongSorter {
    * (ascending).
    */
   static inline auto by_play_count = [](const Song& a, const Song& b) {
-    // if (a.play_count == 0) return false;
-    // if (b.play_count == 0) return true;
     return a.play_count < b.play_count;
   };
 
@@ -694,8 +702,6 @@ class SongSorter {
    * (ascending).
    */
   static inline auto by_release_year = [](const Song& a, const Song& b) {
-    // if (a.release_year == 0) return false;
-    // if (b.release_year == 0) return true;
     return a.release_year < b.release_year;
   };
 
@@ -805,7 +811,9 @@ class SongSorter {
     *data2 = temporary;
   }
 };
+#pragma endregion
 
+#pragma region Search Algorithm Implementation
 /**
  * @class SongSearcher
  * @brief Implementasi algoritma searching (penarian) untuk objek Song.
@@ -941,7 +949,9 @@ class SongSearcher {
     return normalized;
   }
 };
+#pragma endregion
 
+#pragma region Main App
 /**
  * @class SongLibrary
  * @brief Kelas yang mengatur seluruh operasi terhadap Database Lagu
@@ -1935,6 +1945,7 @@ class RAiVFY {
     std::cout << "\nLagu Berhasil Di Hapus!\n";
   }
 };
+#pragma endregion
 
 int main() {
   RAiVFY app;
