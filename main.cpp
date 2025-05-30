@@ -1852,7 +1852,7 @@ class RAiVFY {
   // Menu Admin
   void menuAdmin() {
     clearScreen();
-    printBorder("Hapus Lagu", 10);
+    printBorder("Menu Admin", 10);
     std::cout << "\n 1.  Tambah Lagu\n";
     std::cout << " 2.  Hapus Lagu\n";
     std::cout << " 3.  Daftar Lagu\n";
