@@ -122,8 +122,8 @@ class ArrayList {
 template <typename T>
 struct Node {
   T data;            /**< Data yang akan disimpan dalam node */
-  Node<T>* previous; /**< Pointer ke node sebelumnya */
   Node<T>* next;     /**< Pointer ke node selanjutnya */
+  Node<T>* previous; /**< Pointer ke node sebelumnya */
 
   Node() = default;
 
