@@ -868,7 +868,7 @@ class SongSearcher {
   static ArrayList<Song> searchByGenre(const std::string& genre,
                                        ArrayList<Song>& data) {
     char normalized_genre[255];
-    std::strncpy(normalized_genre, normalizeString(genre).c_str(), 254);
+    std::strncpy(normalized_genre, normalizeString(genre.c_str()).c_str(), 254);
 
     return linearSearch(data, [normalized_genre](const Song& song) {
       char song_genre[255];
@@ -887,7 +887,7 @@ class SongSearcher {
   static ArrayList<Song> searchByArtist(const std::string& artist,
                                         ArrayList<Song>& data) {
     char normalized_artist[255];
-    std::strncpy(normalized_artist, normalizeString(artist).c_str(), 254);
+    std::strncpy(normalized_artist, normalizeString(artist.c_str()).c_str(), 254);
 
     return linearSearch(data, [normalized_artist](const Song& song) {
       char song_artist[255];
@@ -906,7 +906,7 @@ class SongSearcher {
   static ArrayList<Song> searchByTitle(const std::string& title,
                                        ArrayList<Song>& data) {
     char normalized_title[255];
-    std::strncpy(normalized_title, normalizeString(title).c_str(), 254);
+    std::strncpy(normalized_title, normalizeString(title.c_str()).c_str(), 254);
 
     return linearSearch(data, [normalized_title](const Song& song) {
       char song_title[255];
@@ -942,10 +942,13 @@ class SongSearcher {
    * @param string String asli.
    * @return String hasil normalisasi.
    */
-  static std::string normalizeString(const std::string& string) {
-    std::string normalized = string;
-    std::transform(normalized.begin(), normalized.end(), normalized.begin(),
-                   [](unsigned char c) { return std::tolower(c); });
+  static std::string normalizeString(const char* string) {
+    std::string normalized;
+
+    for (int i = 0; string[i] != '\0'; ++i) {
+      normalized += (unsigned char)std::tolower(string[i]);
+    }
+
     return normalized;
   }
 };
