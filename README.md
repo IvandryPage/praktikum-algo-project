@@ -21,14 +21,29 @@ The system allows users to manage a curated list of tracks, simulating the core 
 * **Structural Operations** | Implementation of core algorithms for adding, deleting, and traversing data units.
 * **Terminal-based Interface** | A streamlined CLI designed for efficient user interaction and system feedback.
 
+--- 
+
+### // PREREQUISITES
+This project requires a compiler that supports the **C++20** standard (or later).
+* **GCC:** 10.0+
+* **Clang:** 10.0+
+* **MSVC:** Visual Studio 2019 (v16.6) or later
+
+### // Compilation
+Use the command relevant to your toolchain:
+
+####  // GCC / Clang
+```bash
+g++ -std=c++20 main.cpp -o app
+```
 ---
 
 ### // CONTRIBUTORS
-**Development Team // SI-C**
+#### **Development Team // SI-C**
 * **Galang Ivandry** | 124240042
 * **Muhammad Rafid Habibi** | 124240060
 
-**Laboratory Assistants**
+#### **Laboratory Assistants**
 * **Athaya Rizqia Fitriani** | 124210071
 * **Kesha Azka Afleni** | 124220023
 
